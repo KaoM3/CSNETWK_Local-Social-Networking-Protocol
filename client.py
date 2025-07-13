@@ -62,7 +62,7 @@ def main():
   initialize_sockets(args.port)
   run_threads()
 
-  input("enter to terminate")
+  input("Press Enter to Terminate\n")
 
 # TODO: Implement passing incoming messages to route.py
 # TODO: Implement user interactions (console based)

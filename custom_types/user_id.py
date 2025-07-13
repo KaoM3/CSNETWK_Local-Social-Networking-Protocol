@@ -45,3 +45,6 @@ class UserID:
 
   def __str__(self) -> str:
     return f"{self.username}@{self.ip}"
+  
+  def get_ip(self) -> str:
+    return self.ip

@@ -43,3 +43,22 @@ class Token:
       raise ValueError(f"Invalid scope: {parts[2]}") from e
     
     return cls(user_id=user_id, valid_until=valid_until, scope=scope)
+  
+  def validate(self) -> bool:
+    try:
+      UserID.parse(str(self.user_id))
+    except ValueError:
+      return False
+
+    if not isinstance(self.valid_until, int) or self.valid_until < 0:
+      return False
+    try:
+      datetime.fromtimestamp(self.valid_until, tz=timezone.utc)
+    except (ValueError, OverflowError):
+      return False
+
+    if not isinstance(self.scope, Scope):
+      return False
+
+  def __str__(self):
+    return f"{str(self.user_id)}|{str(self.valid_until)}|{self.scope.value}"

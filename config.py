@@ -11,9 +11,6 @@ import socket
 import ipaddress
 import sys
 
-PING_INTERVAL = 300
-UNICAST_PORT = 50999
-
 # Get Client IP
 def get_ip():
   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -24,10 +21,9 @@ def get_ip():
   finally:
     s.close()
     
-CLIENT_IP = get_ip()
 
-# Get Broadcast Address
-def get_broadcast_address():
+# Get Broadcast IP
+def get_broadcast_ip():
   """Get the broadcast address based on the local IP."""
   try:
     ip = ipaddress.ip_address(CLIENT_IP)
@@ -38,4 +34,10 @@ def get_broadcast_address():
     print(f"Error determining broadcast address: {e}")
     sys.exit(1)
 
-BROADCAST_ADDRESS = get_broadcast_address()
+PING_INTERVAL = 300
+PORT = 50999
+ENCODING = "utf-8"
+CLIENT_IP = get_ip()
+BROADCAST_IP = get_broadcast_ip()
+VERBOSE = False
+

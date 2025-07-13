@@ -12,30 +12,30 @@ class Color:
     RESET = "\033[0m"
 
 
-def setup_logging(verbose=False):
-    global VERBOSE_MODE
-    VERBOSE_MODE = verbose
+def setup_logging(verbose):
+  global VERBOSE_MODE
+  VERBOSE_MODE = verbose
 
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler("app.log"),
-            logging.StreamHandler()
-        ]
-    )
+  level = logging.DEBUG if verbose else logging.INFO
+  logging.basicConfig(
+    level=level,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+      logging.FileHandler("app.log"),
+      logging.StreamHandler()
+    ]
+  )
 
 def send(message: str):
-    if VERBOSE_MODE:
-        logging.debug(f"{Color.SEND}SEND > {message}{Color.RESET}")
+  if VERBOSE_MODE:
+    logging.debug(f"{Color.SEND}SEND > {message}{Color.RESET}")
 
 def receive(message: str):
-    if VERBOSE_MODE:
-        logging.debug(f"{Color.RECV}RECV < {message}{Color.RESET}")
+  if VERBOSE_MODE:
+    logging.debug(f"{Color.RECV}RECV < {message}{Color.RESET}")
 
 def drop(message: str):
-    if VERBOSE_MODE:
-        logging.debug(f"{Color.DROP}DROP ! {message}{Color.RESET}")
+  if VERBOSE_MODE:
+    logging.debug(f"{Color.DROP}DROP ! {message}{Color.RESET}")
 
 

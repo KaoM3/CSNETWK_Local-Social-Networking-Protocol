@@ -1,5 +1,6 @@
 import ipaddress
 import log
+from datetime import datetime, timezone
   
 def serialize_message(msg: dict) -> str:
   lines = []
@@ -24,21 +25,6 @@ def deserialize_message(raw: str) -> dict:
     key, value = line.split(":", 1)
     msg[key.strip()] = value.strip()
   return msg
-
-def validate_id(user_id: str) -> bool:
-  if "@" not in user_id:
-    return False
-
-  try:
-    name, ip = user_id.split("@", 1)
-    if not name:
-      return False
-    # Validate IP using the ipaddress module
-    ipaddress.ip_address(ip)
-    return True
-  except ValueError:
-    return False
-  
 
 # Validates a message according to a provided schema
 def validate_message(msg: dict, schema: dict) -> bool:
@@ -65,3 +51,10 @@ def validate_message(msg: dict, schema: dict) -> bool:
         return False
 
   return True
+
+def unix_to_datetime(utc_timestamp) -> datetime:
+  utc_datetime = datetime.fromtimestamp(utc_timestamp, tz=timezone.utc)
+  return utc_datetime
+
+def datetime_to_unix(utc_datetime: datetime) -> int:
+  return int(utc_datetime.timestamp())

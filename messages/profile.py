@@ -1,7 +1,7 @@
 import log
 import config
 import socket
-from messages.utils import format
+from utils import format
 
 # Profile Template / Schema
 profile_schema = {

@@ -1,1 +1,0 @@
-# TODO: Add feature for silently ignoring spam invites after passing validation

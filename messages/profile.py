@@ -1,8 +1,15 @@
-from messages.utils import format
-import socket
-import config
 import log
-from messages.profile.schema import profile_schema
+import config
+import socket
+from messages.utils import format
+
+# Profile Template / Schema
+profile_schema = {
+  "TYPE": "PROFILE",
+  "USER_ID": {"type": str, "required": True},
+  "DISPLAY_NAME": {"type": str, "required": True},
+  "STATUS": {"type": str, "required": True},
+}
 
 # Sends a new PROFILE msg to the client's broadcast socket
 def send(sock: socket, user_id: str, display_name: str, status: str):
@@ -24,3 +31,11 @@ def send(sock: socket, user_id: str, display_name: str, status: str):
   serialized_msg = format.serialize_message(msg)
   sock.sendto(serialized_msg.encode(config.ENCODING), (config.BROADCAST_IP, config.PORT))
   log.send(msg)
+
+
+# Receives a profile message from a socket
+def receive(message):
+  if format.validate_message(message, profile_schema) == False:
+    log.drop(message)
+    return
+  log.receive(message)

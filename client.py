@@ -5,7 +5,7 @@ import argparse
 import log
 import time
 import router
-from messages.profile import sender as profile_sender
+from messages import profile as profile
 
 # Is the entry point of the application.
 # Handles user input as well
@@ -41,7 +41,7 @@ def run_threads():
   def broadcast_presence():
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      profile_sender.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
+      profile.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 

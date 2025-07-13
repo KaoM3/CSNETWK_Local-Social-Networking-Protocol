@@ -2,7 +2,6 @@
 # Is the entry point of the application.
 # Handles user input as well
 import logging
-import config
 
 class Color:
     

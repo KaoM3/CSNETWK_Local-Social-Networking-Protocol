@@ -12,7 +12,7 @@ profile_schema = {
 }
 
 # Sends a new PROFILE msg to the client's broadcast socket
-def send(sock: socket, user_id: str, display_name: str, status: str):
+def send(sock: socket.socket, user_id: str, display_name: str, status: str):
   if format.validate_id(user_id) == False:
     # TODO: CHANGE ACCORDING TO SPECS
     log.drop("PROFILE: User Id Invalid")
@@ -33,8 +33,8 @@ def send(sock: socket, user_id: str, display_name: str, status: str):
   log.send(msg)
 
 
-# Receives a profile message from a socket
-def receive(message):
+# Receives a profile message from a socket (routed from router)
+def receive(message: dict):
   if format.validate_message(message, profile_schema) == False:
     log.drop(message)
     return

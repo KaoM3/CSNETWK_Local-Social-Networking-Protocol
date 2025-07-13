@@ -12,6 +12,7 @@
 import config
 import utils.format as format
 import messages.profile as profile
+import messages.dm as dm
 
 def route(data, address):
   parsed_data = data.decode(config.ENCODING)
@@ -20,3 +21,6 @@ def route(data, address):
 
   if type == "PROFILE":
     profile.receive(message)
+
+  elif type == "DM":
+    dm.receive(message)

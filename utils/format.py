@@ -39,7 +39,7 @@ def validate_message(msg: dict, schema: dict) -> bool:
     if key == "TYPE":
       continue
 
-    # If field is not required in schema
+    # If field is required in schema
     if rules.get("required", False):
       if key not in msg:
         log.drop(f"Missing required field: {key}")

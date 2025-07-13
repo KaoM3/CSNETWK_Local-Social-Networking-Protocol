@@ -12,7 +12,8 @@ import ipaddress
 import sys
 
 PING_INTERVAL = 300
-UNICAST_PORT = 50999
+PORT = 50999
+ENCODING = "utf-8"
 
 # Get Client IP
 def get_ip():

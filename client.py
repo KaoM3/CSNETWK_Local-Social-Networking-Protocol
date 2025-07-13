@@ -54,7 +54,7 @@ def main():
   args = parser.parse_args()
 
   # Setup logging with verbose flag
-  log.setup_logging(verbose=args.verbose)
+  log.setup_logging(verbose=args.verbose or config.VERBOSE)
   print("Using port:", args.port)
   print(config.CLIENT_IP)
 

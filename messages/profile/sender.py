@@ -22,5 +22,5 @@ def send(sock: socket, user_id: str, display_name: str, status: str):
     return
   
   serialized_msg = format.serialize_message(msg)
-  sock.sendto(serialized_msg.encode(config.ENCODING), (config.BROADCAST_ADDRESS, config.PORT))
+  sock.sendto(serialized_msg.encode(config.ENCODING), (config.BROADCAST_IP, config.PORT))
   log.send(msg)

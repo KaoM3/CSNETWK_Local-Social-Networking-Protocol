@@ -2,17 +2,12 @@ import socket
 import config
 import threading
 import argparse
+import log
 
 # Is the entry point of the application.
 # Handles user input as well
 
 # TODO: Add config initialization
-import socket
-import config
-import threading
-import argparse
-
-
 # TODO: Create broadcasting socket
 # TODO: Create unicast socket
 

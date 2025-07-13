@@ -2,7 +2,6 @@
 # Is the entry point of the application.
 # Handles user input as well
 import logging
-import config
 
 class Color:
     
@@ -12,9 +11,8 @@ class Color:
     INFO = "\033[96m"    # Cyan
     RESET = "\033[0m"
 
-VERBOSE_MODE = config.VERBOSE_MODE
 
-def setup_logging(verbose=config.VERBOSE_MODE):
+def setup_logging(verbose=False):
     global VERBOSE_MODE
     VERBOSE_MODE = verbose
 

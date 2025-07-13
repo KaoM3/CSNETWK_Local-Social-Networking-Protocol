@@ -7,14 +7,24 @@ import argparse
 # Handles user input as well
 
 # TODO: Add config initialization
+import socket
+import config
+import threading
+import argparse
+
+
 # TODO: Create broadcasting socket
 # TODO: Create unicast socket
 
 def main():
-  # PORT AND CLIENT IP
+  # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
   parser.add_argument("port", type=int, help="Port number to use")
+  parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
+
+  # Setup logging with verbose flag
+  log.setup_logging(verbose=args.verbose)
   print("Using port:", args.port)
   print(config.CLIENT_IP)
 
@@ -33,6 +43,3 @@ def main():
 
 # TODO: Implement passing incoming messages to route.py
 # TODO: Implement user interactions (console based)
-
-if __name__ == "__main__":
-  main()

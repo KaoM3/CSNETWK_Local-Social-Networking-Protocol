@@ -4,6 +4,7 @@ import threading
 import argparse
 import log
 import time
+import router
 from messages.profile import sender as profile_sender
 
 # Is the entry point of the application.
@@ -27,6 +28,24 @@ def initialize_sockets(port):
   BROADCAST_SOCKET = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   BROADCAST_SOCKET.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
+def run_threads():
+  # Concurrent Thread for receiving unicast messages
+  def unicast_receive_loop():
+    while True:
+      data, address = UNICAST_SOCKET.recvfrom(1024)
+      router.route(data, address)
+       
+  threading.Thread(target=unicast_receive_loop, daemon=True).start()
+
+  # Concurrent Thread for broadcasting every 300s:
+  def broadcast_presence():
+    while True:
+      # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
+      profile_sender.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
+      time.sleep(config.PING_INTERVAL)
+  threading.Thread(target=broadcast_presence, daemon=True).start()
+
+
 def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
@@ -41,23 +60,9 @@ def main():
 
   # Socket initialization
   initialize_sockets(args.port)
+  run_threads()
 
-  # Concurrent Thread for receiving unicast messages
-  def unicast_receive_loop():
-    while True:
-      data, addr = UNICAST_SOCKET.recvfrom(1024)
-      print(f"[RECV] {addr}: {data.decode(config.ENCODING)}")
-  threading.Thread(target=unicast_receive_loop, daemon=True).start()
-
-  # Concurrent Thread for broadcasting every 300s:
-  def broadcast_presence():
-    while True:
-      # TODO: Update to be dynamic
-      profile_sender.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
-      time.sleep(config.PING_INTERVAL)
-  threading.Thread(target=broadcast_presence, daemon=True).start()
-
-  input("Press Enter to exit...\n")
+  input("enter to terminate")
 
 # TODO: Implement passing incoming messages to route.py
 # TODO: Implement user interactions (console based)

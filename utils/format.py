@@ -3,31 +3,49 @@ import log
 from datetime import datetime, timezone
   
 def serialize_message(msg: dict) -> str:
+  """Serializes `msg` into a string, ready to be encoded and sent over the network"""
   lines = []
   for key, value in msg.items():
     lines.append(f"{key}: {value}")
-  # Join lines with newline, then add the blank line terminator
   return "\n".join(lines) + "\n\n"
 
 def deserialize_message(raw: str) -> dict:
+  """
+  Deserializes a string with key value pairs as the separator and terminates with \\n\\n to a dictionary with key value pairs.
+  Removes leading and trailing whitespace or \\n characters.
+  Skips over empty lines (no field, separator, or value)
+  
+  Parameters:
+    raw (str): The string to be deserialized
+
+  Returns:
+    The dictionary form of the raw string
+
+  Raises:
+    ValueError: If the does not end with the proper terminator
+    ValueError: If a field is malformed (no ":" as separator)
+  """
+  # Terminator Check
+  raw = raw.replace('\r\n', '\n')   # Case for windows style
+  if not raw.endswith('\n\n'):
+    raise ValueError(f"Invalid terminator: {raw}")
+  
+  # Field and Separator Parsing (OWC allowed)
   msg = {}
-  # Strip to remove trailing whitespace/newlines
   raw = raw.strip()
-  # Split by lines
   lines = raw.split("\n")
   for line in lines:
-    # Skip empty lines (if any)
     if not line.strip():
       continue
-    # Split at first colon only
     if ':' not in line:
-      raise ValueError(f"Invalid line (missing colon): {line}")
+      raise ValueError(f"Invalid field (missing colon): {line}")
     key, value = line.split(":", 1)
     msg[key.strip()] = value.strip()
   return msg
 
 # Validates a message according to a provided schema
 def validate_message(msg: dict, schema: dict) -> bool:
+  """Checks `msg` if its keys and its data types match the provided `schema`"""
   if schema.get("TYPE") == None:
     log.drop("Schema must have a TYPE field")
     return False

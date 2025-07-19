@@ -1,11 +1,12 @@
 import secrets
+import re
 from datetime import datetime, timezone
   
 def serialize_message(msg: dict) -> str:
   """Serializes `msg` into a string, ready to be encoded and sent over the network"""
   lines = []
   for key, value in msg.items():
-    lines.append(f"{key}: {value}")
+    lines.append(f"{key}: {str(value)}")
   return "\n".join(lines) + "\n\n"
 
 def deserialize_message(raw: str) -> dict:
@@ -95,3 +96,11 @@ def validate_timestamp(unix: int):
 def generate_message_id() -> str:
   random_bits = secrets.randbits(64)
   return f"{random_bits:016x}" 
+
+def validate_message_id(message_id: str):
+  if not isinstance(message_id, str):
+    raise ValueError("MESSAGE_ID must be a string")
+  if len(message_id) != 16:
+    raise ValueError("MESSAGE_ID must be exactly 16 characters")
+  if not re.fullmatch(r'[0-9a-f]{16}', message_id):
+    raise ValueError("MESSAGE_ID must be a lowercase hexadecimal string")

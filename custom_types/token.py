@@ -1,6 +1,6 @@
 from custom_types.user_id import UserID
 from enum import Enum
-from utils import format
+from utils import msg_format
 
 class Scope(Enum):
   CHAT = "chat"
@@ -18,7 +18,7 @@ class Token:
   def __init__(self, user_id: UserID, valid_until: int, scope: Scope):
     self.user_id = user_id
     try:
-      format.validate_timestamp(valid_until)
+      msg_format.validate_timestamp(valid_until)
       self.valid_until = valid_until
     except ValueError as err:
       raise ValueError(f"Invalid Token: {err}")
@@ -36,7 +36,7 @@ class Token:
     # TIMESTAMP VALIDATION
     try:
       valid_until = int(parts[1])
-      format.validate_timestamp(valid_until)
+      msg_format.validate_timestamp(valid_until)
     except ValueError as err:
       raise ValueError(f"Invalid Token: {err}")
 

@@ -1,5 +1,4 @@
-import ipaddress
-import log
+import secrets
 from datetime import datetime, timezone
   
 def serialize_message(msg: dict) -> str:
@@ -92,3 +91,7 @@ def validate_timestamp(unix: int):
     datetime.fromtimestamp(unix, tz=timezone.utc)
   except (ValueError, OverflowError):
       raise ValueError(f"Invalid timestamp: {unix}")
+
+def generate_message_id() -> int:
+  randomBits = secrets.randbits(64)
+  return f""

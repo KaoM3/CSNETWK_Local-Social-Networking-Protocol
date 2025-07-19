@@ -1,4 +1,4 @@
-import utils.format as format
+import utils.msg_format as msg_format
 from custom_types.user_id import UserID
 import custom_types.token as token
 
@@ -20,8 +20,8 @@ if __name__ == "__main__":
   print(msg)
 
   print("Serialized Message\n")
-  msg = format.serialize_message(msg)
+  msg = msg_format.serialize_message(msg)
   print(msg)
   print("Deserialized Message\n")
-  msg = format.deserialize_message(msg)
+  msg = msg_format.deserialize_message(msg)
   print(msg)

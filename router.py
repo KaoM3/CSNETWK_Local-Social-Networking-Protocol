@@ -11,14 +11,14 @@
 # TODO: Implement complex flow (i.e. acks retries timeouts)
 import config
 import utils.msg_format as msg_format
-import messages.profile as profile
-import messages.dm as dm
-
+import socket
+from typing import Type
 import importlib
 import pkgutil
 import messages.base_message as base_message
+from messages.base_message import BaseMessage
 
-MESSAGE_REGISTRY = {}
+MESSAGE_REGISTRY: dict[str, Type[BaseMessage]] = {}
 
 def load_messages(dir: str):
   """
@@ -56,14 +56,19 @@ def load_messages(dir: str):
 
   print(MESSAGE_REGISTRY)
 
+def send(type: str, data: dict, socket: socket.socket, ip: str, port: int):
+  message_class = base_message.BaseMessage(MESSAGE_REGISTRY.get(type))
+  message_obj = message_class.parse(data)
+  message_obj.send(socket, ip, port, config.ENCODING)
 
-def route(data, address):
-  parsed_data = data.decode(config.ENCODING)
-  message = msg_format.deserialize_message(parsed_data)
-  type = message.get("TYPE")
+def route(data):
+    parsed_data = data.decode(config.ENCODING)
+    message = msg_format.deserialize_message(parsed_data)
+    msg_type = message.get("TYPE")
 
-  if type == "PROFILE":
-    profile.receive(message)
-
-  elif type == "DM":
-    dm.receive(message)
+    message_class = MESSAGE_REGISTRY.get(msg_type)
+    if message_class is None:
+      print(f"Unknown message type: {msg_type}")
+      return
+    message_obj = message_class.parse(message)
+    message_obj.receive(data)

@@ -5,7 +5,6 @@ import argparse
 import log
 import time
 import router
-from messages import profile as profile
 
 # Is the entry point of the application.
 # Handles user input as well
@@ -27,6 +26,7 @@ def initialize_sockets(port):
 
   BROADCAST_SOCKET = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   BROADCAST_SOCKET.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+  BROADCAST_SOCKET.bind(('0.0.0.0', port))
 
 def run_threads():
   # Concurrent Thread for receiving unicast messages
@@ -41,25 +41,30 @@ def run_threads():
   def broadcast_presence():
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      profile.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
+      router.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
+  def broadcast_receive_loop():
+    while True:
+      raw, address = BROADCAST_SOCKET.recvfrom(1024)
+      router.route(raw, address)
+  threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
-  parser.add_argument("port", type=int, help="Port number to use")
+  parser.add_argument("--port", type=int, help="Port number to use")
   parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
 
   # Setup logging with verbose flag
   log.setup_logging(verbose=args.verbose or config.VERBOSE)
-  print("Using port:", args.port)
+  print("Using port:", args.port or config.PORT)
   print(config.CLIENT_IP)
 
   # Socket initialization
-  initialize_sockets(args.port)
+  initialize_sockets(args.port or config.PORT)
   run_threads()
 
   router.load_messages(config.MESSAGES_DIR)

@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from custom_types.user_id import UserID
 from enum import Enum
@@ -11,17 +10,25 @@ class Scope(Enum):
   GAME = "game"
   GROUP = "group"
 
-@dataclass
 class Token:
   user_id: UserID
   valid_until: int
   scope: Scope
 
+  def __init__(self, user_id: UserID, valid_until: int, scope: Scope):
+    self.user_id = user_id
+    try:
+      self.validate_timestamp(valid_until)
+      self.valid_until = valid_until
+    except ValueError as err:
+      raise ValueError(f"Invalid Token: {err}")
+    self.scope = scope
+
   @classmethod
   def parse(cls, raw: str) -> "Token":
     parts = raw.split("|")
     if len(parts) != 3:
-      raise ValueError("Invalid token format")
+      raise ValueError(f"Invalid Token: Wrong format {raw}")
     
     # USER_ID VALIDATION
     user_id = UserID.parse(parts[0])
@@ -29,36 +36,36 @@ class Token:
     # TIMESTAMP VALIDATION
     try:
       valid_until = int(parts[1])
-      if valid_until < 0:
-        raise ValueError("Timestamp cannot be negative")
-      
-      datetime.fromtimestamp(valid_until, tz=timezone.utc)
-    except (ValueError, OverflowError) as e:
-      raise ValueError(f"Invalid timestamp: {parts[1]}") from e
+      cls.validate_timestamp(valid_until)
+    except ValueError as err:
+      raise ValueError(f"Invalid Token: {err}")
 
     # SCOPE VALIDATION
     try:
       scope = Scope(parts[2])
-    except ValueError as e:
-      raise ValueError(f"Invalid scope: {parts[2]}") from e
+    except ValueError:
+      raise ValueError(f"Invalid Token: Wrong scope {parts[2]}")
     
     return cls(user_id=user_id, valid_until=valid_until, scope=scope)
-  
-  def validate(self) -> bool:
-    try:
-      UserID.parse(str(self.user_id))
-    except ValueError:
-      return False
 
-    if not isinstance(self.valid_until, int) or self.valid_until < 0:
-      return False
+  @staticmethod
+  def validate_timestamp(unix: int):
+    if not isinstance(unix, int) or unix < 0:
+      raise ValueError(f"Invalid timestamp: {unix}")
     try:
-      datetime.fromtimestamp(self.valid_until, tz=timezone.utc)
+      datetime.fromtimestamp(unix, tz=timezone.utc)
     except (ValueError, OverflowError):
-      return False
+        raise ValueError(f"Invalid timestamp: {unix}")
+      
 
-    if not isinstance(self.scope, Scope):
-      return False
+  def __eq__(self, other):
+    if not isinstance(other, Token):
+      return NotImplemented
+    return self.user_id == other.user_id and self.valid_until == other.valid_until and self.scope == other.scope
 
+  def __hash__(self):
+    return hash((self.user_id, self.valid_until, self.scope))
+  
   def __str__(self):
     return f"{str(self.user_id)}|{str(self.valid_until)}|{self.scope.value}"
+  

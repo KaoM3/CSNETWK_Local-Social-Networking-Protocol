@@ -43,32 +43,40 @@ def deserialize_message(raw: str) -> dict:
     msg[key.strip()] = value.strip()
   return msg
 
-# Validates a message according to a provided schema
-def validate_message(msg: dict, schema: dict) -> bool:
-  """Checks `msg` if its keys and its data types match the provided `schema`"""
+def validate_message(msg: dict, schema: dict):
+  """
+  Checks `msg` if its keys and its data types match the provided `schema`
+
+  Parameters:
+    msg (dict): The message in dictionary form
+    schema (dict): The schema that msg would be validated against 
+
+  Raises:
+    ValueError: If the TYPE field is missing
+    ValueError: If message does not include required schema fields
+    ValueError: If message includes fields not in schema fields
+    TypeError: If message field's type does not match schema field's type
+  """
   if schema.get("TYPE") == None:
-    log.drop("Schema must have a TYPE field")
-    return False
+    raise ValueError(f"Invalid message: \"TYPE\" field missing")
   elif msg.get("TYPE") != schema.get("TYPE"):
-    log.drop(f"Message type {msg.get("TYPE")} does not match schema type {schema.get("TYPE")}")
-    return False
+    raise ValueError(f"Invalid message: msg TYPE {msg.get("TYPE")} does not match schema TYPE {schema.get("TYPE")}")
   
+  for key in msg:
+    if key not in schema:
+      raise ValueError(f"Unexpected field in message: {key}")
+
   for key, rules in schema.items():
     if key == "TYPE":
       continue
-
-    # If field is required in schema
+    # If field is required in schema, defaults to False
     if rules.get("required", False):
       if key not in msg:
-        log.drop(f"Missing required field: {key}")
-        return False
-
+        raise ValueError(f"Missing required field: {key}")
+      
     if key in msg and "type" in rules:
       if not isinstance(msg[key], rules["type"]):
-        log.drop(f"Invalid type for {key}: expected {rules['type'].__name__}, got {type(msg[key]).__name__}")
-        return False
-
-  return True
+        raise TypeError(f"Invalid type for {key}: expected {rules['type'].__name__}, got {type(msg[key]).__name__}")
 
 def unix_to_datetime(utc_timestamp) -> datetime:
   utc_datetime = datetime.fromtimestamp(utc_timestamp, tz=timezone.utc)

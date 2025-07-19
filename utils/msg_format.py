@@ -92,6 +92,6 @@ def validate_timestamp(unix: int):
   except (ValueError, OverflowError):
       raise ValueError(f"Invalid timestamp: {unix}")
 
-def generate_message_id() -> int:
-  randomBits = secrets.randbits(64)
-  return f""
+def generate_message_id() -> str:
+  random_bits = secrets.randbits(64)
+  return f"{random_bits:016x}" 

@@ -59,6 +59,15 @@ project/
 
 # Usage
 
+## Initialization
+```
+python client.py -port PORT_NUM --verbose
+```
+
+Optional arguments:
+- `-port PORT_NUM`: Overrides the default port located in `config.py`
+- `--verbose`: Toggles verbose mode to on
+
 ## Adding New Message Types
 Each message is represented as a python file under the `messages/` folder. These are dynamically loaded by `router.py` and as such, each message type should:
 
@@ -68,7 +77,7 @@ Each message is represented as a python file under the `messages/` folder. These
 
 Another subfolder can be used for dynamic allocation by changing `MESSAGES_DIR` in the `config.py` file.
 
-### __schema__
+### `__schema__`
 Is a dictionary used by `validate_message` to validate the instance of the message type against. Each key value pair represents a field of the message
 
 - `KEY`: The name of the field (usually in ALL_CAPS)

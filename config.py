@@ -41,4 +41,5 @@ CLIENT_IP = get_ip()
 BROADCAST_IP = get_broadcast_ip()
 VERBOSE = False
 DEFAULT_TTL = 300
+MESSAGES_DIR = "messages"
 

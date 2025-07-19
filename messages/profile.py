@@ -1,7 +1,7 @@
 import log
 import config
 import socket
-from utils import format
+from utils import msg_format
 from custom_types.user_id import UserID
 
 # Profile Template / Schema
@@ -21,11 +21,11 @@ def send(sock: socket.socket, user_id: str, display_name: str, status: str):
       "DISPLAY_NAME":  display_name,
       "STATUS": status,
     }
-    if format.validate_message(msg, profile_schema) == False:
+    if msg_format.validate_message(msg, profile_schema) == False:
       log.drop("PROFILE: Message Invalid")
       return
     
-    serialized_msg = format.serialize_message(msg)
+    serialized_msg = msg_format.serialize_message(msg)
     sock.sendto(serialized_msg.encode(config.ENCODING), (config.BROADCAST_IP, config.PORT))
     log.send(msg)
   except Exception as e:
@@ -42,7 +42,7 @@ def receive(message: dict):
   }
 
   try:
-    if format.validate_message(received_msg, profile_schema) == False:
+    if msg_format.validate_message(received_msg, profile_schema) == False:
       log.drop(f"MALFORMED: {received_msg}")
       return
     log.receive(received_msg)

@@ -1,11 +1,20 @@
 import ipaddress
-from dataclasses import dataclass
 
-# Immutable class for user ids
-@dataclass(frozen=True)
 class UserID:
-  username: str
-  ip: str
+  def __init__(self, username: str, ip: str):
+    username = username.strip()
+    ip = ip.strip()
+
+    if not username:
+      raise ValueError("Invalid UserID: missing username")
+    
+    try:
+      ip_obj = ipaddress.ip_address(ip)
+    except ValueError:
+      raise ValueError(f"Invalid UserID: invalid ip: {ip}")
+    
+    self.username = username
+    self.ip = str(ip_obj)
 
   @classmethod
   def parse(cls, raw: str) -> "UserID":
@@ -13,38 +22,34 @@ class UserID:
     try:
       username, ip_str = raw.split("@", 1)
     except ValueError:
-      raise ValueError(f"Invalid UserID format, missing '@': {raw}")
+      raise ValueError(f"Invalid UserID: missing '@': {raw}")
 
     username = username.strip()
     ip_str = ip_str.strip()
 
     if not username:
-      raise ValueError("Username cannot be empty")
+      raise ValueError("Invalid UserID: missing username")
 
     try:
       ip_obj = ipaddress.ip_address(ip_str)
     except ValueError:
-      raise ValueError(f"Invalid IP address: {ip_str}")
+      raise ValueError(f"Invalid UserID: invalid ip: {ip_str}")
     
     return cls(username=username, ip=str(ip_obj))
-    
-  @staticmethod
-  def validate(user_id: str) -> bool:
-    if "@" not in user_id:
-      return False
 
-    try:
-      name, ip = user_id.split("@", 1)
-      if not name:
-        return False
-      # Validate IP using the ipaddress module
-      ipaddress.ip_address(ip)
-      return True
-    except ValueError:
-      return False
+  def __eq__(self, other):
+    if not isinstance(other, UserID):
+      return NotImplemented
+    return self.username == other.username and self.ip == other.ip
+
+  def __hash__(self):
+    return hash((self.username, self.ip))
 
   def __str__(self) -> str:
     return f"{self.username}@{self.ip}"
   
   def get_ip(self) -> str:
     return self.ip
+  
+  def get_username(self) -> str:
+    return self.username

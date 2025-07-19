@@ -62,6 +62,8 @@ def main():
   initialize_sockets(args.port)
   run_threads()
 
+  router.load_messages(config.MESSAGES_DIR)
+
   input("Press Enter to Terminate\n")
 
 # TODO: Implement passing incoming messages to route.py

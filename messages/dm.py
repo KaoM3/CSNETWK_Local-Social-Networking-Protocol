@@ -64,3 +64,5 @@ class Dm(BaseMessage):
   @classmethod
   def receive(cls, raw: str) -> "Dm":
     return cls.parse(msg_format.deserialize_message(raw))
+
+__message__ = Dm

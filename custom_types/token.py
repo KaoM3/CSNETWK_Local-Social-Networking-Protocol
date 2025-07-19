@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
 from custom_types.user_id import UserID
 from enum import Enum
+from utils import format
 
 class Scope(Enum):
   CHAT = "chat"
@@ -18,7 +18,7 @@ class Token:
   def __init__(self, user_id: UserID, valid_until: int, scope: Scope):
     self.user_id = user_id
     try:
-      self.validate_timestamp(valid_until)
+      format.validate_timestamp(valid_until)
       self.valid_until = valid_until
     except ValueError as err:
       raise ValueError(f"Invalid Token: {err}")
@@ -36,7 +36,7 @@ class Token:
     # TIMESTAMP VALIDATION
     try:
       valid_until = int(parts[1])
-      cls.validate_timestamp(valid_until)
+      format.validate_timestamp(valid_until)
     except ValueError as err:
       raise ValueError(f"Invalid Token: {err}")
 
@@ -47,16 +47,6 @@ class Token:
       raise ValueError(f"Invalid Token: Wrong scope {parts[2]}")
     
     return cls(user_id=user_id, valid_until=valid_until, scope=scope)
-
-  @staticmethod
-  def validate_timestamp(unix: int):
-    if not isinstance(unix, int) or unix < 0:
-      raise ValueError(f"Invalid timestamp: {unix}")
-    try:
-      datetime.fromtimestamp(unix, tz=timezone.utc)
-    except (ValueError, OverflowError):
-        raise ValueError(f"Invalid timestamp: {unix}")
-      
 
   def __eq__(self, other):
     if not isinstance(other, Token):

@@ -84,3 +84,11 @@ def unix_to_datetime(utc_timestamp) -> datetime:
 
 def datetime_to_unix(utc_datetime: datetime) -> int:
   return int(utc_datetime.timestamp())
+
+def validate_timestamp(unix: int):
+  if not isinstance(unix, int) or unix < 0:
+    raise ValueError(f"Invalid timestamp: {unix}")
+  try:
+    datetime.fromtimestamp(unix, tz=timezone.utc)
+  except (ValueError, OverflowError):
+      raise ValueError(f"Invalid timestamp: {unix}")

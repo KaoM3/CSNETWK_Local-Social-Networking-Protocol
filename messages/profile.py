@@ -3,48 +3,42 @@ import config
 import socket
 from utils import msg_format
 from custom_types.user_id import UserID
+from messages.base_message import BaseMessage
 
-# Profile Template / Schema
-profile_schema = {
-  "TYPE": "PROFILE",
-  "USER_ID": {"type": UserID, "required": True},
-  "DISPLAY_NAME": {"type": str, "required": True},
-  "STATUS": {"type": str, "required": True},
-}
-
-# Sends a new PROFILE msg to the client's broadcast socket
-def send(sock: socket.socket, user_id: str, display_name: str, status: str):
-  try:
-    msg = {
-      "TYPE": "PROFILE",
-      "USER_ID": UserID.parse(user_id),
-      "DISPLAY_NAME":  display_name,
-      "STATUS": status,
-    }
-    if msg_format.validate_message(msg, profile_schema) == False:
-      log.drop("PROFILE: Message Invalid")
-      return
-    
-    serialized_msg = msg_format.serialize_message(msg)
-    sock.sendto(serialized_msg.encode(config.ENCODING), (config.BROADCAST_IP, config.PORT))
-    log.send(msg)
-  except Exception as e:
-    log.drop({f"PROFILE: {e}"})
-
-# Receives a profile message from a socket (routed from router)
-def receive(message: dict):
-
-  received_msg = {
-    "TYPE": message.get("TYPE"),
-    "USER_ID": UserID.parse(message.get("USER_ID")),
-    "DISPLAY_NAME": message.get("DISPLAY_NAME"),
-    "STATUS": message.get("STATUS"),
+class Profile(BaseMessage):
+  TYPE = "PROFILE"
+  __schema__ = {
+    "TYPE": "PROFILE",
+    "USER_ID": {"type": UserID, "required": True},
+    "DISPLAY_NAME": {"type": str, "required": True},
+    "STATUS": {"type": str, "required": True},
   }
 
-  try:
-    if msg_format.validate_message(received_msg, profile_schema) == False:
-      log.drop(f"MALFORMED: {received_msg}")
-      return
-    log.receive(received_msg)
-  except Exception as e:
-    log.drop({f"PROFILE RECEIVE: {e}"})
+  @property
+  def payload(self) -> dict:
+    return {
+      "TYPE": self.TYPE,
+      "USER_ID": self.user_id,
+      "DISPLAY_NAME": self.display_name,
+      "STATUS": self.status,
+    }
+  
+  def __init__(self, user_id: UserID, display_name: str, status: str):
+    self.type = self.TYPE
+    self.user_id = user_id
+    self.display_name = display_name
+    self.status = self.status
+    msg_format.validate_message(self.payload, self.__schema__)
+
+  @classmethod
+  def parse(cls, data: str) -> "Profile":
+    return cls(
+      user_id = UserID.parse(data["USER_ID"]),
+      display_name = str(data["DISPLAY_NAME"]),
+      status = str(data["STATUS"])
+    )
+  
+  @classmethod
+  def receive(cls, raw: str) -> "Profile":
+    return cls.parse(msg_format.deserialize_message(raw))
+  

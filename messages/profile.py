@@ -1,6 +1,3 @@
-import log
-import config
-import socket
 from utils import msg_format
 from custom_types.user_id import UserID
 from messages.base_message import BaseMessage
@@ -42,3 +39,4 @@ class Profile(BaseMessage):
   def receive(cls, raw: str) -> "Profile":
     return cls.parse(msg_format.deserialize_message(raw))
   
+__message__ = Profile

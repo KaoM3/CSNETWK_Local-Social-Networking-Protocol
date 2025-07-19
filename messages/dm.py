@@ -1,70 +1,66 @@
-import socket
-import secrets
-import log
-import config
 from custom_types.user_id import UserID
-from custom_types.token import Token
+import custom_types.token as token
 from datetime import datetime, timezone
-from utils import format
+from utils import msg_format
+from messages.base_message import BaseMessage
 
-dm_schema = {
-  "TYPE": "DM",
-  "FROM": {"type": UserID, "required": True},
-  "TO": {"type": UserID, "required": True},
-  "CONTENT": {"type": str, "required": True},
-  "TIMESTAMP": {"type": int, "required": True},
-  "MESSAGE_ID": {"type": str, "required": True},
-  "TOKEN": {"type": Token, "required": True},
-}
+class Dm(BaseMessage):
+  TYPE = "DM"
+  __schema__ = {
+    "TYPE": TYPE,
+    "FROM": {"type": UserID, "required": True},
+    "TO": {"type": UserID, "required": True},
+    "CONTENT": {"type": str, "required": True},
+    "TIMESTAMP": {"type": int, "required": True},
+    "MESSAGE_ID": {"type": str, "required": True},
+    "TOKEN": {"type": token.Token, "required": True},
+  }
 
-def send(sock: socket.socket, from_user: str, to_user: str, content: str):
-  try:
-    from_uid = UserID.parse(from_user)
-    to_uid = UserID.parse(to_user)
-    expiry = int(datetime.now(timezone.utc).timestamp()) + config.DEFAULT_TTL
-    token = Token.parse(f"{from_user}|{str(expiry)}|chat")
-    msg = {
-      "TYPE": "DM",
-      "FROM": from_uid,
-      "TO": to_uid,
-      "CONTENT": content,
-      "TIMESTAMP": int(datetime.now(timezone.utc).timestamp()),
-      "MESSAGE_ID": secrets.token_hex(8),
-      "TOKEN": token,
+  @property
+  def payload(self) -> dict:
+    return {
+      "TYPE": self.TYPE,
+      "FROM": self.from_user,
+      "TO": self.to_user,
+      "CONTENT": self.content,
+      "TIMESTAMP": self.timestamp,
+      "MESSAGE_ID": self.message_id,
+      "TOKEN": self.token,
     }
-    if format.validate_message(msg, dm_schema) == False:
-      log.drop("SEND DM")
-      return
+  
+  def __init__(self, from_user: UserID, to_user: UserID, content: str, token_validity: int):
+    unix_now = int(datetime.now(timezone.utc).timestamp())
+    self.type = self.TYPE
+    self.from_user = from_user
+    self.to_user = to_user
+    self.content = content
+    self.timestamp = unix_now
+    self.message_id = msg_format.generate_message_id()
+    self.token = token.Token(from_user, unix_now + token_validity, token.Scope.CHAT)
+
+  
+  @classmethod
+  def parse(cls, data: dict) -> "Dm":
+    return cls.__new__(cls)._init_from_dict(data)
+  
+  def _init_from_dict(self, data: dict):
+    self.type = data["TYPE"]
+    self.from_user = UserID.parse(data["FROM"])
+    self.to_user = UserID.parse(data["TO"])
+    self.content = data["CONTENT"]
     
-    serialized_msg = format.serialize_message(msg)
-    sock.sendto(serialized_msg.encode(config.ENCODING), (to_uid.get_ip(), config.PORT))
-    log.send(msg)
-
-  except ValueError as e:
-    log.drop(f"ERROR {e}")
-
-# Receives a profile message from a socket (routed from router)
-def receive(message: dict):
-  try:
-    token = Token.parse(message.get("TOKEN"))
-    received_msg = {
-      "TYPE": message.get("TYPE"),
-      "FROM": UserID.parse(message.get("FROM")),
-      "TO": UserID.parse(message.get("TO")),
-      "CONTENT": message.get("CONTENT"),
-      "TIMESTAMP": int(message.get("TIMESTAMP")),
-      "MESSAGE_ID": message.get("MESSAGE_ID"),
-      "TOKEN": token,
-    }
-
-    if Token.validate(token) == False:
-      log.drop(f"INVALID TOKEN: {message}")
-      return
-
-    if format.validate_message(received_msg, dm_schema) == False:
-      log.drop(f"INVALID FORMAT: {message}")
-      return
+    timestamp = int(data["TIMESTAMP"])
+    msg_format.validate_timestamp(timestamp)
+    self.timestamp = timestamp
     
-    log.receive(received_msg)
-  except Exception as e:
-    log.drop(f"ERROR processing received message: {e}")
+    message_id = data["MESSAGE_ID"]
+    msg_format.validate_message_id(message_id)
+    self.message_id = message_id
+    
+    self.token = token.Token.parse(data["TOKEN"])
+    msg_format.validate_message(self.payload, self.__schema__)
+    return self
+
+  @classmethod
+  def receive(cls, raw: str) -> "Dm":
+    return cls.parse(msg_format.deserialize_message(raw))

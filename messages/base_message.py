@@ -17,7 +17,6 @@ class BaseMessage(ABC):
     """Sends this message using the provided socket"""
     msg = format.serialize_message(self.payload)
     socket.sendto(msg.encode(encoding), (ip, port))
-    pass
 
   @classmethod
   @abstractmethod

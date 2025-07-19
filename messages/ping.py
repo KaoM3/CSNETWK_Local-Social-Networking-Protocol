@@ -25,7 +25,7 @@ class Ping(BaseMessage):
   @classmethod
   def parse(cls, data: dict) -> "Ping":
     return cls(
-      user_id=data["USER_ID"]
+      user_id=UserID.parse(data["USER_ID"])
     )
         
   @classmethod

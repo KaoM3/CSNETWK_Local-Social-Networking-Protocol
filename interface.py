@@ -1,6 +1,6 @@
 import router
 import config
-from custom_types.user_id import UserID
+from states import client
 
 
 def print_profile_message(profile_obj):
@@ -30,8 +30,7 @@ def create_profile_message():
 
       if key == "DISPLAY_NAME":
         # Generate the USER_ID from display name + broadcast IP
-        display_name = user_input
-        user_id = f"{display_name}@{config.CLIENT_IP}"
+        user_id = client.get_user_id()
         fields["USER_ID"] = user_id
 
   profile_obj = profile_class(

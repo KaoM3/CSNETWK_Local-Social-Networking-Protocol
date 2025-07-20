@@ -77,7 +77,7 @@ def main():
   client.set_user_id(interface.get_user_id())
 
   #interface.create_profile_message()
-  interface.create_message("PROFILE")
+  interface.create_message("DM")
 
 if __name__ == "__main__":
   main()

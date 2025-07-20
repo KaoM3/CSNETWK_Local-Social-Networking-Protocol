@@ -1,5 +1,6 @@
 import router
 import config
+import keyword
 from states import client
 from custom_types.user_id import UserID
 import custom_types.token as token
@@ -69,14 +70,17 @@ def create_message(msg_type: str):
           user_input = input(f"{key} cannot be empty. Try again: ").strip()
         typ = value.get("type", None)
         parser = type_parsers.get(typ)
+        arg_name = key.lower()
+        if keyword.iskeyword(arg_name):
+          arg_name = arg_name+"_"
         if parser:
           try:
-            new_msg_args[key.lower()] = parser(user_input)
+            new_msg_args[arg_name] = parser(user_input)
             break
           except Exception as e:
             print(f"{e}")
         else:
-          new_msg_args[key.lower()] = user_input  # fallback or raise error
+          new_msg_args[arg_name] = user_input  # fallback or raise error
           break
 
   print(new_msg_args)

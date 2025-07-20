@@ -78,6 +78,8 @@ Each message is represented as a python file under the `messages/` folder. These
 - Include `__message__` inside the module, which points to the implementing class.
 - Match constructor variable ordering and name with its field names as defined in `__schema__` (typically lowercase versions of the keys).
 
+In case the field name cannot be used as a constructor argument name, include an underscore on the end: e.g. from -> from_
+
 Another subfolder can be used for dynamic allocation by changing `MESSAGES_DIR` in the `config.py` file.
 
 

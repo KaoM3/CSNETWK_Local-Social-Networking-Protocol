@@ -8,7 +8,7 @@ class Dm(BaseMessage):
   TYPE = "DM"
   __schema__ = {
     "TYPE": TYPE,
-    "FROM": {"type": UserID, "required": True},
+    "FROM": {"type": UserID, "required": True, "input": True},
     "TO": {"type": UserID, "required": True, "input": True},
     "CONTENT": {"type": str, "required": True, "input": True},
     "TIMESTAMP": {"type": int, "required": True},
@@ -28,15 +28,15 @@ class Dm(BaseMessage):
       "TOKEN": self.token,
     }
   
-  def __init__(self, from_user: UserID, to_user: UserID, content: str, token_validity: int):
+  def __init__(self, from_: UserID, to: UserID, content: str):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
-    self.from_user = from_user
-    self.to_user = to_user
+    self.from_user = from_
+    self.to_user = to
     self.content = content
     self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    self.token = token.Token(from_user, unix_now + token_validity, token.Scope.CHAT)
+    self.token = token.Token(from_, unix_now + 600, token.Scope.CHAT) # 10 minutes valid
 
   
   @classmethod

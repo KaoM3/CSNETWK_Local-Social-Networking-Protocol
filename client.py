@@ -6,6 +6,7 @@ import log
 import time
 import router
 import interface
+from states import client
 
 
 # Is the entry point of the application.
@@ -69,18 +70,11 @@ def main():
   initialize_sockets(args.port or config.PORT)
   run_threads()
 
-
-
+  # Initialize router
   router.load_messages(config.MESSAGES_DIR)
 
-  # Start the interface
-  interface.create_profile_message()
-
-
-  input("Press Enter to Terminate\n")
-
-# TODO: Implement passing incoming messages to route.py
-# TODO: Implement user interactions (console based)
+  # Set client UserID
+  client.set_user_id(interface.get_user_id())
 
 if __name__ == "__main__":
   main()

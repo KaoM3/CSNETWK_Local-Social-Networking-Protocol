@@ -16,7 +16,7 @@ class Token:
   scope: Scope
 
   def __init__(self, user_id: UserID, valid_until: int, scope: Scope):
-    self.user_id = user_id
+    self.user_id = UserID.parse(user_id)
     try:
       msg_format.validate_timestamp(valid_until)
       self.valid_until = valid_until

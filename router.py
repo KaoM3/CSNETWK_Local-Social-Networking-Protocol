@@ -15,6 +15,7 @@ import socket
 from typing import Type
 import importlib
 import pkgutil
+import log
 import messages.base_message as base_message
 from messages.base_message import BaseMessage
 
@@ -36,25 +37,23 @@ def load_messages(dir: str):
       if msg_module is base_message:
         continue
       elif msg_class is None:
-        print(f"ERROR: [{module_name}] Missing __message__")
+        log.error(f"[{module_name}] Missing __message__")
         continue
 
       msg_schema = msg_class.__schema__
       if msg_schema is None:
-        print(f"ERROR: [{module_name}] Missing __schema__")
+        log.error(f"[{module_name}] Missing __schema__")
         continue
 
       msg_type = msg_schema.get("TYPE")
       if msg_type is None:
-        print(f"ERROR: [{module_name}] Missing Field: TYPE")
+        log.error(f"[{module_name}] Missing Field: TYPE")
         continue
 
       MESSAGE_REGISTRY[msg_type] = msg_class
-      print(f"REGISTERED: [{module_name}]")  
+      log.success(f"REGISTERED: [{module_name}]")  
     except Exception as err:
-      print(f"ERROR: {err}")
-
-  print(MESSAGE_REGISTRY)
+      log.error(f"{err}")
 
 def send(type: str, data: dict, socket: socket.socket, ip: str, port: int):
   message_class = base_message.BaseMessage(MESSAGE_REGISTRY.get(type))

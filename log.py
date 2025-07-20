@@ -1,12 +1,11 @@
-# Handles logging
-# Is the entry point of the application.
-# Handles user input as well
 import logging
 
 class Color:
     
+    OK = "\033[92m"    # Green
     SEND = "\033[92m"    # Green
     RECV = "\033[94m"    # Blue
+    ERR = "\033[91m"    # Red
     DROP = "\033[91m"    # Red
     INFO = "\033[96m"    # Cyan
     RESET = "\033[0m"
@@ -26,16 +25,25 @@ def setup_logging(verbose):
     ]
   )
 
+def error(message: str):
+  logging.debug(f"{Color.ERR}ERROR: {message}{Color.RESET}")
+
+def success(message: str):
+  logging.debug(f"{Color.OK}{message}{Color.RESET}")
+
+def debug(message: str):
+  logging.debug(f"{Color.INFO}{message}{Color.RESET}")
+
+def info(message: str):
+  logging.info(f"{Color.INFO}{message}{Color.RESET}")
+
 def send(message: str):
-  if VERBOSE_MODE:
-    logging.debug(f"{Color.SEND}SEND > {message}{Color.RESET}")
+  logging.debug(f"{Color.SEND}SEND > {message}{Color.RESET}")
 
 def receive(message: str):
-  if VERBOSE_MODE:
-    logging.debug(f"{Color.RECV}RECV < {message}{Color.RESET}")
+  logging.debug(f"{Color.RECV}RECV < {message}{Color.RESET}")
 
 def drop(message: str):
-  if VERBOSE_MODE:
-    logging.debug(f"{Color.DROP}DROP ! {message}{Color.RESET}")
+  logging.debug(f"{Color.DROP}DROP ! {message}{Color.RESET}")
 
 

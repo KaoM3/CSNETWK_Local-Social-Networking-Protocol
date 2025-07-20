@@ -6,7 +6,7 @@ class Profile(BaseMessage):
   TYPE = "PROFILE"
   __schema__ = {
     "TYPE": "PROFILE",
-    "USER_ID": {"type": UserID, "required": True},
+    "USER_ID": {"type": UserID, "required": True, "input": True},
     "DISPLAY_NAME": {"type": str, "required": True, "input": True},
     "STATUS": {"type": str, "required": True, "input": True},
   }

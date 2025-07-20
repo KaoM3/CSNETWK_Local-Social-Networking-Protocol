@@ -61,11 +61,11 @@ project/
 
 ## Initialization
 ```
-python client.py -port PORT_NUM --verbose
+python client.py --port PORT_NUM --verbose
 ```
 
 Optional arguments:
-- `-port PORT_NUM`: Overrides the default port located in `config.py`
+- `--port PORT_NUM`: Overrides the default port located in `config.py`
 - `--verbose`: Toggles verbose mode to on
 
 ## Adding New Message Types

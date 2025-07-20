@@ -31,7 +31,7 @@ def create_profile_message():
             if key == "DISPLAY_NAME":
                 # Generate the USER_ID from display name + broadcast IP
                 display_name = user_input
-                user_id = f"{display_name}@{config.CLIENT_IP}"
+                user_id = UserID.parse(f"{display_name}@{config.CLIENT_IP}")
                 fields["USER_ID"] = user_id
 
     profile_obj = profile_class(

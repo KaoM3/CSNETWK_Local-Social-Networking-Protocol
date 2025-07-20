@@ -1,6 +1,7 @@
 import router
 import config
 import keyword
+import log
 from states import client
 from custom_types.user_id import UserID
 import custom_types.token as token
@@ -16,7 +17,7 @@ def print_message(msg_obj: BaseMessage):
   Prints the message's payload in a readable format.
   """
   for field, value in msg_obj.payload.items():
-    print(f"{field}: {value}")
+    log.debug(f"{field}: {value}")
 
 def create_profile_message():
   profile_class = router.get_module("PROFILE")  # This returns the Profile class
@@ -25,6 +26,7 @@ def create_profile_message():
 
   for key, value in schema.items():
     if key == "TYPE":
+      print(f"TYPE: {value}")
       continue
     if value.get("input", False):
       user_input = input(f"Enter {key}: ").strip()
@@ -62,6 +64,7 @@ def create_message(msg_type: str):
   new_msg_args = {}
   for key, value in msg_schema.items():
     if key == "TYPE":
+      log.info(f"TYPE: {value}")
       continue
     if value.get("input", False):
       while True:
@@ -78,12 +81,11 @@ def create_message(msg_type: str):
             new_msg_args[arg_name] = parser(user_input)
             break
           except Exception as e:
-            print(f"{e}")
+            log.warn(f"{e}")
         else:
           new_msg_args[arg_name] = user_input  # fallback or raise error
           break
 
-  print(new_msg_args)
   new_msg_obj = msg_class(**new_msg_args)
   print_message(new_msg_obj)
   return new_msg_obj

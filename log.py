@@ -8,6 +8,7 @@ class Color:
     ERR = "\033[91m"    # Red
     DROP = "\033[91m"    # Red
     INFO = "\033[96m"    # Cyan
+    WARN = "\033[93m"    # Yellow
     RESET = "\033[0m"
 
 
@@ -18,7 +19,7 @@ def setup_logging(verbose):
   level = logging.DEBUG if verbose else logging.INFO
   logging.basicConfig(
     level=level,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    format='%(message)s',
     handlers=[
       logging.FileHandler("app.log"),
       logging.StreamHandler()
@@ -26,7 +27,10 @@ def setup_logging(verbose):
   )
 
 def error(message: str):
-  logging.debug(f"{Color.ERR}ERROR: {message}{Color.RESET}")
+  logging.error(f"{Color.ERR}ERROR: {message}{Color.RESET}")
+
+def warn(message: str):
+  logging.warning(f"{Color.WARN}WARNING: {message}{Color.RESET}")
 
 def success(message: str):
   logging.debug(f"{Color.OK}{message}{Color.RESET}")

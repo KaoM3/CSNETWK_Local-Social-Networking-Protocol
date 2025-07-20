@@ -7,8 +7,8 @@ class Profile(BaseMessage):
   __schema__ = {
     "TYPE": "PROFILE",
     "USER_ID": {"type": UserID, "required": True},
-    "DISPLAY_NAME": {"type": str, "required": True},
-    "STATUS": {"type": str, "required": True},
+    "DISPLAY_NAME": {"type": str, "required": True, "input": True},
+    "STATUS": {"type": str, "required": True, "input": True},
   }
 
   @property
@@ -17,14 +17,14 @@ class Profile(BaseMessage):
       "TYPE": self.TYPE,
       "USER_ID": self.user_id,
       "DISPLAY_NAME": self.display_name,
-      "STATUS": self.status,
+      "STATUS": self.status
     }
   
   def __init__(self, user_id: UserID, display_name: str, status: str):
     self.type = self.TYPE
     self.user_id = user_id
     self.display_name = display_name
-    self.status = self.status
+    self.status = status
     msg_format.validate_message(self.payload, self.__schema__)
 
   @classmethod

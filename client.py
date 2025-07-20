@@ -78,6 +78,8 @@ def main():
 
   #interface.create_profile_message()
   interface.create_message("DM")
+  interface.create_message("PING")
+  interface.create_message("PROFILE")
 
 if __name__ == "__main__":
   main()

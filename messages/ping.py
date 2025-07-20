@@ -7,7 +7,7 @@ class Ping(BaseMessage):
   TYPE = "PING"
   __schema__ = {
     "TYPE": TYPE,
-    "USER_ID": {"type": UserID, "required": True}
+    "USER_ID": {"type": UserID, "required": True, "input": True}
   }
 
   @property

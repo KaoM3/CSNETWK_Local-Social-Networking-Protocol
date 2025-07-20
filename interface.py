@@ -1,18 +1,14 @@
 import router
 import config
 from states import client
+from messages.base_message import BaseMessage
 
-
-def print_profile_message(profile_obj):
+def print_message(msg_obj: BaseMessage):
   """
-  Prints the profile message in a readable format.
+  Prints the message's payload in a readable format.
   """
-  print(f"Profile Message:")
-  print(f"  USER_ID: {profile_obj.user_id}")
-  print(f"  DISPLAY_NAME: {profile_obj.display_name}")
-  print(f"  STATUS: {profile_obj.status}")
-  print(f"  TYPE: {profile_obj.TYPE}")
-
+  for field, value in msg_obj.payload.items():
+    print(f"{field}: {value}")
 
 def create_profile_message():
   profile_class = router.get_module("PROFILE")  # This returns the Profile class
@@ -38,7 +34,7 @@ def create_profile_message():
     display_name=fields["DISPLAY_NAME"],
     status=fields["STATUS"]
   )
-  print_profile_message(profile_obj)
+  print_message(profile_obj)
   return profile_obj
 
 

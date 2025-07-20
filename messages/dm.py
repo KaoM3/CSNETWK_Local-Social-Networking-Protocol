@@ -9,8 +9,8 @@ class Dm(BaseMessage):
   __schema__ = {
     "TYPE": TYPE,
     "FROM": {"type": UserID, "required": True},
-    "TO": {"type": UserID, "required": True},
-    "CONTENT": {"type": str, "required": True},
+    "TO": {"type": UserID, "required": True, "input": True},
+    "CONTENT": {"type": str, "required": True, "input": True},
     "TIMESTAMP": {"type": int, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
     "TOKEN": {"type": token.Token, "required": True},

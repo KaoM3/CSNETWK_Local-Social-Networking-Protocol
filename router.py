@@ -72,3 +72,10 @@ def route(data):
       return
     message_obj = message_class.parse(message)
     message_obj.receive(data)
+
+def get_module(module_name: str):
+    """
+    Returns the module object for the given module name.
+    """
+    return MESSAGE_REGISTRY[module_name]
+  

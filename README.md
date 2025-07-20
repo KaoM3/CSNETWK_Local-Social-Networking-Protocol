@@ -57,6 +57,7 @@ project/
 - `utils/`: Folder for utility files
   - `msg_format.py`: Contains helper functions for formatting messages such as `serialize_message`, `deserialize_message`, etc.
 
+
 # Usage
 
 ## Initialization
@@ -68,17 +69,20 @@ Optional arguments:
 - `--port PORT_NUM`: Overrides the default port located in `config.py`
 - `--verbose`: Toggles verbose mode to on
 
+
 ## Adding New Message Types
-Each message is represented as a python file under the `messages/` folder. These are dynamically loaded by `router.py` and as such, each message type should:
+Each message is represented as a python file under the `messages/` folder. These are dynamically loaded by `router.py`. Instantiating new messages would also be automated and as such, each message type should:
 
 - Inherit from `BaseMessage`, an abstract class defining what functionality the message should implement.
 - Include `__schema__` under the implementing class, which dictates the format of the message type.
 - Include `__message__` inside the module, which points to the implementing class.
+- Match constructor variable ordering and name with its field names as defined in `__schema__` (typically lowercase versions of the keys).
 
 Another subfolder can be used for dynamic allocation by changing `MESSAGES_DIR` in the `config.py` file.
 
+
 ### `__schema__`
-Is a dictionary used by `validate_message` to validate the instance of the message type against. Each key value pair represents a field of the message
+Is a dictionary used by `validate_message` to validate the instance of the message type against. Each key value pair represents a field of the message. The first key value pair should always be `TYPE`: `MSG_TYPE` where msg_type is a hardcoded value.
 
 - `KEY`: The name of the field (usually in ALL_CAPS)
 - `VALUE`: The "rules" in dictionary form.
@@ -87,5 +91,5 @@ Each RULE may include the following flags:
 
 - `type`: The allowed data type of the field's value
 - `required`: If `True` the field's values cannot be empty
-- `input`: Can be set to `True`, useful to user interfaces for prompting
+- `input`: If `True`, this field is needed as an argument for the class constructor
 - `output`: Can be set to `True`, useful to user interfaces for displaying

@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 import socket
 
 class BaseMessage(ABC):
+  """
+  Abstract base class for message types.
+  Enforces schema presence and requires subclasses to implement
+  parsing, receiving, and payload serialization.
+  """
+
   def __init_subclass__(cls):
     super().__init_subclass__()
     if not hasattr(cls, '__schema__'):

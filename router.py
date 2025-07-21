@@ -52,26 +52,26 @@ def load_messages(dir: str):
     except Exception as err:
       log.error(f"{err}")
 
-def send(type: str, data: dict, socket: socket.socket, ip: str, port: int):
-  message_class = BaseMessage(MESSAGE_REGISTRY.get(type))
+def send(socket: socket.socket, type: str, data: dict, ip: str, port: int):
+  message_class = MESSAGE_REGISTRY.get(type)
   message_obj = message_class.parse(data)
   message_obj.send(socket, ip, port, config.ENCODING)
 
-def route(data):
-    parsed_data = data.decode(config.ENCODING)
-    message = msg_format.deserialize_message(parsed_data)
-    msg_type = message.get("TYPE")
+def recv_message(raw: bytes, address) -> BaseMessage:
+  try:
+    msg_str = raw.decode(config.ENCODING, errors="ignore")
+    msg_type = msg_format.extract_message_type(msg_str)
 
-    message_class = MESSAGE_REGISTRY.get(msg_type)
-    if message_class is None:
-      print(f"Unknown message type: {msg_type}")
-      return
-    message_obj = message_class.parse(message)
-    message_obj.receive(data)
+    message_obj = MESSAGE_REGISTRY[msg_type].receive(msg_str)
+    log.receive(f"RECEIVED: {message_obj} FROM {address}")
+    return message_obj
+  except Exception as err:
+    log.drop({raw.decode(config.ENCODING, errors="ignore")})
+    log.error({err})
 
 def get_module(module_name: str):
-    """
-    Returns the module object for the given module name.
-    """
-    return MESSAGE_REGISTRY[module_name]
+  """
+  Returns the module object for the given module name.
+  """
+  return MESSAGE_REGISTRY[module_name]
   

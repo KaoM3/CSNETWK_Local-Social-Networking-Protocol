@@ -2,20 +2,22 @@ from custom_types.user_id import UserID
 from enum import Enum
 from utils import msg_format
 
-class Scope(Enum):
-  CHAT = "chat"
-  FILE = "file"
-  BROADCAST = "broadcast"
-  FOLLOW = "follow"
-  GAME = "game"
-  GROUP = "group"
-
 class Token:
+  class Scope(Enum):
+    CHAT = "chat"
+    FILE = "file"
+    BROADCAST = "broadcast"
+    FOLLOW = "follow"
+    GAME = "game"
+    GROUP = "group"
+
   user_id: UserID
   valid_until: int
   scope: Scope
 
   def __init__(self, user_id: UserID, valid_until: int, scope: Scope):
+    if not isinstance(user_id, UserID):
+      raise ValueError("Invalid Token: user_id is not of type UserID")
     self.user_id = user_id
     try:
       msg_format.validate_timestamp(valid_until)
@@ -42,7 +44,7 @@ class Token:
 
     # SCOPE VALIDATION
     try:
-      scope = Scope(parts[2])
+      scope = Token.Scope(parts[2])
     except ValueError:
       raise ValueError(f"Invalid Token: Wrong scope {parts[2]}")
     

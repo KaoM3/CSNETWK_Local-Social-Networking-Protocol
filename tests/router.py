@@ -1,9 +1,9 @@
 import router
 import config
 import utils.msg_format as msg_format
-from messages.base_message import BaseMessage
+from custom_types.base_message import BaseMessage
 from custom_types.user_id import UserID
-import custom_types.token as token
+from custom_types.token import Token
 
 if __name__ == "__main__":
   router.load_messages(config.MESSAGES_DIR)
@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
   from_user = UserID("alice", "192.168.1.11")
   to_user = UserID("bob", "192.168.1.12")
-  user_token = token.Token(from_user, 1728942100, token.Scope.CHAT)
+  user_token = Token(from_user, 1728942100, Token.Scope.CHAT)
 
   msg = {
     "TYPE": "DM",

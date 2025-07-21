@@ -1,13 +1,13 @@
 from custom_types.user_id import UserID
 from utils import msg_format
-from messages.base_message import BaseMessage
+from custom_types.base_message import BaseMessage
 import socket
 
 class Ping(BaseMessage):
   TYPE = "PING"
   __schema__ = {
     "TYPE": TYPE,
-    "USER_ID": {"type": UserID, "required": True}
+    "USER_ID": {"type": UserID, "required": True, "input": True}
   }
 
   @property

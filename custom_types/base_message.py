@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 import socket
 
 class BaseMessage(ABC):
+  """
+  Abstract base class for message types.
+  Enforces schema presence and requires subclasses to implement
+  parsing, receiving, and payload serialization.
+  """
+
   def __init_subclass__(cls):
     super().__init_subclass__()
     if not hasattr(cls, '__schema__'):
@@ -11,7 +17,7 @@ class BaseMessage(ABC):
   @abstractmethod
   def parse(cls, data: dict) -> "BaseMessage":
     """Parses structured data into a message instance"""
-    pass
+    raise NotImplementedError
 
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     """Sends this message using the provided socket"""
@@ -22,10 +28,10 @@ class BaseMessage(ABC):
   @abstractmethod
   def receive(cls, raw: str) -> "BaseMessage":
     """Receives and parses a message of this type"""
-    pass
+    raise NotImplementedError
 
   @property
   @abstractmethod
   def payload(self) -> dict:
     """Returns this message's payload in dict form"""
-    pass
+    raise NotImplementedError

@@ -1,11 +1,11 @@
 import utils.msg_format as msg_format
 from custom_types.user_id import UserID
-import custom_types.token as token
+from custom_types.token import Token
 
 if __name__ == "__main__":
   from_user = UserID("alice", "192.168.1.11")
   to_user = UserID("bob", "192.168.1.12")
-  user_token = token.Token("alice", 1728942100, token.Scope.CHAT)
+  user_token = Token("alice", 1728942100, Token.Scope.CHAT)
 
   msg = {
     "TYPE": "DM",

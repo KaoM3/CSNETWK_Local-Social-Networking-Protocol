@@ -13,6 +13,40 @@ type_parsers = {
   # add more types as needed
 }
 
+
+def interface():
+    """
+    Interface module for handling user interactions and message creation.
+    """
+    print("Welcome to the Local Social Networking Protocol Interface!")
+
+    while True:
+        print("\nSelect an action:")
+        for i, (key, value) in enumerate(router.MESSAGE_REGISTRY.items(), start=1):
+            print(f"{i}. {key}")
+        print(f"{i + 1}. Exit")  # Add exit option at the end
+
+        choice = input("Enter your action number: ").strip()
+
+        if choice.isdigit():
+            choice_num = int(choice)
+            if 1 <= choice_num <= len(router.MESSAGE_REGISTRY):
+                selected_key = list(router.MESSAGE_REGISTRY.keys())[choice_num - 1]
+
+                print(f"\nYou selected: {selected_key}")
+                create_message(selected_key)
+
+                
+            elif choice_num == len(router.MESSAGE_REGISTRY) + 1:
+                print("Exiting. Goodbye!")
+                break
+            else:
+                print("Invalid choice. Please enter a valid number.")
+        else:
+            print("Invalid input. Please enter a number.")
+
+
+
 def print_message(msg_obj: BaseMessage):
   """
   Prints the message's payload in a readable format.
@@ -20,35 +54,8 @@ def print_message(msg_obj: BaseMessage):
   for field, value in msg_obj.payload.items():
     log.debug(f"{field}: {value}")
 
-def create_profile_message():
-  profile_class = router.get_module("PROFILE")  # This returns the Profile class
-  schema = profile_class.__schema__
-  fields = {}
 
-  for key, value in schema.items():
-    if key == "TYPE":
-      print(f"TYPE: {value}")
-      continue
-    if value.get("input", False):
-      user_input = input(f"Enter {key}: ").strip()
-      while not user_input:
-        user_input = input(f"{key} cannot be empty. Try again: ").strip()
-      fields[key] = user_input
-
-      if key == "DISPLAY_NAME":
-        # Generate the USER_ID from display name + broadcast IP
-        user_id = client.get_user_id()
-        fields["USER_ID"] = user_id
-
-  profile_obj = profile_class(
-    user_id=fields["USER_ID"],
-    display_name=fields["DISPLAY_NAME"],
-    status=fields["STATUS"]
-  )
-  print_message(profile_obj)
-  return profile_obj
-
-def create_message(msg_type: str):
+def create_message(msg_type: str): # ping , dm, profile
   """
   Creates a new message object of msg_type.
 

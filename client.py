@@ -75,6 +75,15 @@ def main():
 
   # Run Threads
   run_threads()
+  
+
+  interface.create_message("PROFILE")  # Example usage, can be replaced with any message type
+  #interface.create_message("PING")  # Example usage, can be replaced with any message type
+  #interface.create_message("DM")  # Example usage, can be replaced with any message type
+  
+  interface.interface()
+
+
 
   #interface.create_profile_message()
   input("Press ENTER to terminate")

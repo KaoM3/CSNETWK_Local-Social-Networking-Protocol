@@ -16,8 +16,7 @@ from typing import Type
 import importlib
 import pkgutil
 import log
-import messages.base_message as base_message
-from messages.base_message import BaseMessage
+from custom_types.base_message import BaseMessage
 
 MESSAGE_REGISTRY: dict[str, Type[BaseMessage]] = {}
 
@@ -34,9 +33,7 @@ def load_messages(dir: str):
       msg_module = importlib.import_module(f"{module_dir.__name__}.{module_name}")
       msg_class = getattr(msg_module, "__message__", None)
 
-      if msg_module is base_message:
-        continue
-      elif msg_class is None:
+      if msg_class is None:
         log.error(f"[{module_name}] Missing __message__")
         continue
 
@@ -56,7 +53,7 @@ def load_messages(dir: str):
       log.error(f"{err}")
 
 def send(type: str, data: dict, socket: socket.socket, ip: str, port: int):
-  message_class = base_message.BaseMessage(MESSAGE_REGISTRY.get(type))
+  message_class = BaseMessage(MESSAGE_REGISTRY.get(type))
   message_obj = message_class.parse(data)
   message_obj.send(socket, ip, port, config.ENCODING)
 

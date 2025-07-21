@@ -1,8 +1,8 @@
 from custom_types.user_id import UserID
-import custom_types.token as token
+from custom_types.token import Token
 from datetime import datetime, timezone
 from utils import msg_format
-from messages.base_message import BaseMessage
+from custom_types.base_message import BaseMessage
 
 class Dm(BaseMessage):
   TYPE = "DM"
@@ -13,7 +13,7 @@ class Dm(BaseMessage):
     "CONTENT": {"type": str, "required": True, "input": True},
     "TIMESTAMP": {"type": int, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
-    "TOKEN": {"type": token.Token, "required": True},
+    "TOKEN": {"type": Token, "required": True},
   }
 
   @property
@@ -36,7 +36,7 @@ class Dm(BaseMessage):
     self.content = content
     self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    self.token = token.Token(from_, unix_now + 600, token.Scope.CHAT) # 10 minutes valid
+    self.token = Token(from_, unix_now + 600, Token.Scope.CHAT) # 10 minutes valid
 
   
   @classmethod
@@ -57,7 +57,7 @@ class Dm(BaseMessage):
     msg_format.validate_message_id(message_id)
     self.message_id = message_id
     
-    self.token = token.Token.parse(data["TOKEN"])
+    self.token = Token.parse(data["TOKEN"])
     msg_format.validate_message(self.payload, self.__schema__)
     return self
 

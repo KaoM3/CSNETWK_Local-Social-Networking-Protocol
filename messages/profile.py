@@ -1,6 +1,6 @@
 from utils import msg_format
 from custom_types.user_id import UserID
-from messages.base_message import BaseMessage
+from custom_types.base_message import BaseMessage
 
 class Profile(BaseMessage):
   TYPE = "PROFILE"

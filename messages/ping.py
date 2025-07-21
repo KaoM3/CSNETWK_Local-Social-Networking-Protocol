@@ -1,6 +1,6 @@
 from custom_types.user_id import UserID
 from utils import msg_format
-from messages.base_message import BaseMessage
+from custom_types.base_message import BaseMessage
 import socket
 
 class Ping(BaseMessage):

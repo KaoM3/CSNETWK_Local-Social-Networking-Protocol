@@ -4,12 +4,13 @@ import keyword
 import log
 from states import client
 from custom_types.user_id import UserID
-import custom_types.token as token
-from messages.base_message import BaseMessage
+from custom_types.token import Token
+from custom_types.base_message import BaseMessage
+
 type_parsers = {
-    UserID: UserID.parse,
-    token.Token: token.Token.parse,
-    # add more types as needed
+  UserID: UserID.parse,
+  Token: Token.parse,
+  # add more types as needed
 }
 
 def print_message(msg_obj: BaseMessage):

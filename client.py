@@ -36,23 +36,21 @@ def run_threads():
   def unicast_receive_loop():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(1024)
-      router.route(data, address)
-       
+      log.debug("\nUNICAST RECEIVE\n")
+      received_msg = router.recv_message(data, address)
+      if received_msg is not None:
+        interface.print_message(received_msg)
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-  #    router.send(BROADCAST_SOCKET, f"TEST_USER@{config.CLIENT_IP}", "TEST_USER", "TEST_STATUS")
+      router.send(BROADCAST_SOCKET, "PING", {"TYPE": "PING", "USER_ID": f"{client.get_user_id()}"}, config.BROADCAST_IP, config.PORT)
+      unknown_msg = "THIS SHOULD NOT BE RECEIVED (DROP THIS MSG)"
+      BROADCAST_SOCKET.sendto(unknown_msg.encode(config.ENCODING), (config.BROADCAST_IP, config.PORT))
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
-
-  def broadcast_receive_loop():
-    while True:
-      raw, address = BROADCAST_SOCKET.recvfrom(1024)
-      router.route(raw, address)
-  threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE
@@ -68,7 +66,6 @@ def main():
 
   # Socket initialization
   initialize_sockets(args.port or config.PORT)
-  run_threads()
 
   # Initialize router
   router.load_messages(config.MESSAGES_DIR)
@@ -76,10 +73,20 @@ def main():
   # Set client UserID
   client.set_user_id(interface.get_user_id())
 
+  # Run Threads
+  run_threads()
+  
+
+  interface.create_message("PROFILE")  # Example usage, can be replaced with any message type
+  #interface.create_message("PING")  # Example usage, can be replaced with any message type
+  #interface.create_message("DM")  # Example usage, can be replaced with any message type
+  
+  interface.interface()
+
+
+
   #interface.create_profile_message()
-  interface.create_message("DM")
-  interface.create_message("PING")
-  interface.create_message("PROFILE")
+  input("Press ENTER to terminate")
 
 if __name__ == "__main__":
   main()

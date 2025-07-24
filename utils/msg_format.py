@@ -104,3 +104,11 @@ def validate_message_id(message_id: str):
     raise ValueError("MESSAGE_ID must be exactly 16 characters")
   if not re.fullmatch(r'[0-9a-f]{16}', message_id):
     raise ValueError("MESSAGE_ID must be a lowercase hexadecimal string")
+  
+def extract_message_type(msg: str) -> str:
+  type_field = msg.split("\n", 1)[0]
+
+  if type_field.startswith("TYPE: "):
+    return type_field[6:].strip()
+  
+  raise ValueError("TYPE field is missing or malformed")

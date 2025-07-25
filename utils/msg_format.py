@@ -57,26 +57,29 @@ def validate_message(msg: dict, schema: dict):
     ValueError: If message includes fields not in schema fields
     TypeError: If message field's type does not match schema field's type
   """
+  # Ensures that each schema has a type field and matches with the message's type field
   if schema.get("TYPE") == None:
     raise ValueError(f"Invalid message: \"TYPE\" field missing")
   elif msg.get("TYPE") != schema.get("TYPE"):
     raise ValueError(f"Invalid message: msg TYPE {msg.get("TYPE")} does not match schema TYPE {schema.get("TYPE")}")
   
-  for key in msg:
-    if key not in schema:
-      raise ValueError(f"Unexpected field in message: {key}")
+  # Ensures the schema contains field that is seen in the message
+  for field in msg:
+    if field not in schema:
+      raise ValueError(f"Unexpected field in message: {field}")
 
-  for key, rules in schema.items():
-    if key == "TYPE":
+  # Iterates over the fields and rules in the schema (rules being the dictionary of flags)
+  for field, rules in schema.items():
+    if field == "TYPE":
       continue
-    # If field is required in schema, defaults to False
-    if rules.get("required", False):
-      if key not in msg:
-        raise ValueError(f"Missing required field: {key}")
-      
-    if key in msg and "type" in rules:
-      if not isinstance(msg[key], rules["type"]):
-        raise TypeError(f"Invalid type for {key}: expected {rules['type'].__name__}, got {type(msg[key]).__name__}")
+    # Ensures fields are populated unless set by the flag as false.
+    if rules.get("required", True):
+      if field not in msg:
+        raise ValueError(f"Missing required field: {field}")
+    # Perform type validation for the field's value by checking if it is an instance of specified "type" in rules
+    if field in msg and "type" in rules:
+      if not isinstance(msg[field], rules["type"]):
+        raise TypeError(f"Invalid type for {field}: expected {rules['type'].__name__}, got {type(msg[field]).__name__}")
 
 def unix_to_datetime(utc_timestamp) -> datetime:
   utc_datetime = datetime.fromtimestamp(utc_timestamp, tz=timezone.utc)

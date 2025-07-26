@@ -1,21 +1,10 @@
-# Main processing hub, handles routing of incoming and outcoming messages
-
-# TODO: Implement message parsing
-# Encoding: Plain UTF-8 text, key-value format
-# Separator: KEY: VALUE
-# Terminator: Blank line (\n\n) [Each message should end with a (\n\n)]
-
-# TODO: Implement token checking before:
-# TODO: Implement routing to handler 
-# TODO: Implement message dispatch
-# TODO: Implement complex flow (i.e. acks retries timeouts)
 import config
-import utils.msg_format as msg_format
 import socket
-from typing import Type
 import importlib
 import pkgutil
 import log
+import utils.msg_format as msg_format
+from typing import Type
 from custom_types.base_message import BaseMessage
 
 MESSAGE_REGISTRY: dict[str, Type[BaseMessage]] = {}
@@ -52,7 +41,7 @@ def load_messages(dir: str):
     except Exception as err:
       log.error(f"{err}")
 
-def send(socket: socket.socket, type: str, data: dict, ip: str, port: int):
+def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: int):
   message_class = MESSAGE_REGISTRY.get(type)
   message_obj = message_class.parse(data)
   message_obj.send(socket, ip, port, config.ENCODING)

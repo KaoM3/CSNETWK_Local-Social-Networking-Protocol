@@ -11,7 +11,6 @@ class Color:
     WARN = "\033[93m"    # Yellow
     RESET = "\033[0m"
 
-
 def setup_logging(verbose):
   global VERBOSE_MODE
   VERBOSE_MODE = verbose
@@ -19,35 +18,42 @@ def setup_logging(verbose):
   level = logging.DEBUG if verbose else logging.INFO
   logging.basicConfig(
     level=level,
-    format='%(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
       logging.FileHandler("app.log"),
-      logging.StreamHandler()
     ]
   )
 
 def error(message: str):
-  logging.error(f"{Color.ERR}ERROR: {message}{Color.RESET}")
+    logging.error(message)
+    print(f"{Color.ERR}ERROR: {message}{Color.RESET}\n")
 
 def warn(message: str):
-  logging.warning(f"{Color.WARN}WARNING: {message}{Color.RESET}")
+    logging.warning(message)
+    print(f"{Color.WARN}WARNING: {message}{Color.RESET}\n")
 
 def success(message: str):
-  logging.debug(f"{Color.OK}{message}{Color.RESET}")
+    logging.info(message)  # success usually info level
+    print(f"{Color.OK}{message}{Color.RESET}\n")
 
 def debug(message: str):
-  logging.debug(f"{Color.INFO}{message}{Color.RESET}")
+    logging.debug(message)
+    print(f"{Color.INFO}{message}{Color.RESET}\n")
 
 def info(message: str):
-  logging.info(f"{Color.INFO}{message}{Color.RESET}")
+    logging.info(message)
+    print(f"{Color.INFO}{message}{Color.RESET}\n")
 
 def send(message: str):
-  logging.debug(f"{Color.SEND}SEND > {message}{Color.RESET}")
+    logging.info(f"SEND > {message}")
+    print(f"{Color.SEND}SEND > {message}{Color.RESET}\n")
 
 def receive(message: str):
-  logging.debug(f"{Color.RECV}RECV < {message}{Color.RESET}")
+    logging.info(f"RECV < {message}")
+    print(f"{Color.RECV}RECV < {message}{Color.RESET}\n")
 
 def drop(message: str):
-  logging.debug(f"{Color.DROP}DROP ! {message}{Color.RESET}")
+    logging.warning(f"DROP ! {message}")
+    print(f"{Color.DROP}DROP ! {message}{Color.RESET}\n")
 
 

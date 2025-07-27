@@ -61,3 +61,6 @@ class Token:
   def __str__(self):
     return f"{str(self.user_id)}|{str(self.valid_until)}|{self.scope.value}"
   
+  def __repr__(self):
+    return str(self)
+  

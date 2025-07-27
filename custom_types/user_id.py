@@ -53,3 +53,6 @@ class UserID:
   
   def get_username(self) -> str:
     return self.username
+  
+  def __repr__(self) -> str:
+    return str(self)

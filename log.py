@@ -1,15 +1,5 @@
 import logging
-
-class Color:
-    
-    OK = "\033[92m"    # Green
-    SEND = "\033[92m"    # Green
-    RECV = "\033[94m"    # Blue
-    ERR = "\033[91m"    # Red
-    DROP = "\033[91m"    # Red
-    INFO = "\033[96m"    # Cyan
-    WARN = "\033[93m"    # Yellow
-    RESET = "\033[0m"
+import app
 
 def setup_logging(verbose):
   global VERBOSE_MODE
@@ -20,40 +10,36 @@ def setup_logging(verbose):
     level=level,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-      logging.FileHandler("app.log"),
+      logging.FileHandler("app.log")
     ]
   )
 
 def error(message: str):
-    logging.error(message)
-    print(f"{Color.ERR}ERROR: {message}{Color.RESET}\n")
+  logging.error(message)
+  app.print_log(message)
 
 def warn(message: str):
-    logging.warning(message)
-    print(f"{Color.WARN}WARNING: {message}{Color.RESET}\n")
-
-def success(message: str):
-    logging.info(message)  # success usually info level
-    print(f"{Color.OK}{message}{Color.RESET}\n")
+  logging.warning(message)
+  app.print_log(message)
 
 def debug(message: str):
-    logging.debug(message)
-    print(f"{Color.INFO}{message}{Color.RESET}\n")
+  logging.debug(message)
+  app.print_log(message)
 
 def info(message: str):
-    logging.info(message)
-    print(f"{Color.INFO}{message}{Color.RESET}\n")
+  logging.info(message)
+  app.print_log(message)
 
 def send(message: str):
-    logging.info(f"SEND > {message}")
-    print(f"{Color.SEND}SEND > {message}{Color.RESET}\n")
+  logging.info(f"SEND: {message}")
+  app.print_log(f"SEND: {message}")
 
 def receive(message: str):
-    logging.info(f"RECV < {message}")
-    print(f"{Color.RECV}RECV < {message}{Color.RESET}\n")
+  logging.info(f"RECEIVED: {message}")
+  app.print_log(f"RECEIVED: {message}")
 
 def drop(message: str):
-    logging.warning(f"DROP ! {message}")
-    print(f"{Color.DROP}DROP ! {message}{Color.RESET}\n")
+  logging.warning(f"DROPPED: {message}")
+  app.print_log(f"DROPPED: {message}")
 
 

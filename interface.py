@@ -2,6 +2,7 @@ import router
 import config
 import keyword
 import log
+import app
 from custom_types.user_id import UserID
 from custom_types.token import Token
 from custom_types.base_message import BaseMessage

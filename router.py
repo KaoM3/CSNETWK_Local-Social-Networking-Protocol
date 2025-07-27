@@ -17,6 +17,7 @@ def load_messages(dir: str):
   - dir: The subfolder under root containing the messages
   """
   module_dir = importlib.import_module(dir)
+  log.info(f"Importing message modules from: {module_dir.__path__}")
   for _, module_name, _ in pkgutil.iter_modules(module_dir.__path__):
     try:
       msg_module = importlib.import_module(f"{module_dir.__name__}.{module_name}")
@@ -37,7 +38,7 @@ def load_messages(dir: str):
         continue
 
       MESSAGE_REGISTRY[msg_type] = msg_class
-      log.success(f"REGISTERED: [{module_name}]")  
+      log.info(f"REGISTERED: [{module_name}]")  
     except Exception as err:
       log.error(f"{err}")
 
@@ -52,7 +53,7 @@ def recv_message(raw: bytes, address) -> BaseMessage:
     msg_type = msg_format.extract_message_type(msg_str)
 
     message_obj = MESSAGE_REGISTRY[msg_type].receive(msg_str)
-    log.receive(f"RECEIVED: {message_obj} FROM {address}")
+    log.receive(f"{message_obj.payload} FROM: {address}")
     return message_obj
   except Exception as err:
     log.drop({raw.decode(config.ENCODING, errors="ignore")})

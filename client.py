@@ -6,7 +6,7 @@ import log
 import time
 import router
 import interface
-import logging
+import app
 from states import client
 
 UNICAST_SOCKET = None
@@ -31,7 +31,7 @@ def run_threads():
       data, address = UNICAST_SOCKET.recvfrom(1024)
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
-        interface.print_message(received_msg)
+        pass
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
@@ -51,8 +51,9 @@ def main():
 
   # Setup logging with verbose flag
   log.setup_logging(verbose=args.verbose or config.VERBOSE)
-  logging.info(f"Using port: {args.port or config.PORT}")
-  logging.info("Client IP: %s", config.CLIENT_IP)
+  log.info(f"Using port: {args.port or config.PORT}")
+  log.info(f"Client IP: {config.CLIENT_IP}")
+  log.info(f"Broadcast IP: {config.BROADCAST_IP}")
 
   # Socket initialization
   initialize_sockets(args.port or config.PORT)
@@ -67,7 +68,7 @@ def main():
   run_threads()
   
   # Main Program Loop
-  interface.main_loop()
+  app.start_app()
 
 if __name__ == "__main__":
   main()

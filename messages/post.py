@@ -26,7 +26,7 @@ class Post(BaseMessage):
         "TYPE": TYPE,
         "USER_ID": {"type": UserID, "required": True, "input": True},
         "CONTENT": {"type": str, "required": True, "input": True},
-        "TTL": {"type": int, "required": True},
+        "TTL": {"type": str, "required": True, "input": True},
         "MESSAGE_ID": {"type": str, "required": True},
         "TOKEN": {"type": str, "required": True},
     }
@@ -37,7 +37,7 @@ class Post(BaseMessage):
             "TYPE": self.TYPE,
             "USER_ID": self.user_id,
             "CONTENT": self.content,
-            "TTL": self.ttl,
+            "TTL": str(self.ttl),
             "MESSAGE_ID": self.message_id,
             "TOKEN": self.token,
         }
@@ -47,9 +47,9 @@ class Post(BaseMessage):
         self.type = self.TYPE
         self.user_id = user_id
         self.content = content
-        self.ttl = ttl
+        self.ttl = str(ttl)
         self.message_id = msg_format.generate_message_id()
-        self.token = Token(user_id, unix_now + ttl, Token.Scope.BROADCAST)
+        self.token = Token(user_id, unix_now + int(ttl), Token.Scope.BROADCAST)
 
     @classmethod
     def parse(cls, data: dict) -> "Post":
@@ -59,7 +59,7 @@ class Post(BaseMessage):
         self.type = data["TYPE"]
         self.user_id = UserID.parse(data["USER_ID"])
         self.content = str(data["CONTENT"])
-        self.ttl = int(data["TTL"])
+        self.ttl = str(data["TTL"])
 
         message_id = data["MESSAGE_ID"]
         msg_format.validate_message_id(message_id)

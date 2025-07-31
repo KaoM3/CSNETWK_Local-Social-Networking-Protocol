@@ -7,6 +7,13 @@ from custom_types.token import Token
 from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
+import socket
+
+
+
+
+    # Temporary followers mapping for demonstration
+
 
 class Post(BaseMessage):
     """
@@ -61,6 +68,22 @@ class Post(BaseMessage):
         self.token = Token.parse(data["TOKEN"])
         msg_format.validate_message(self.payload, self.__schema__)
         return self
+
+    My_followers = ['reinman@192.168.1.7', 'alice@192.168.1.8', 'bob@192.168.1.9', 'charlie@192.168.1.10', 'diana@192.168.1.11']
+
+    def send(self, sock: socket.socket, port: int, encoding: str = "utf-8"):
+        """
+        Sends the POST message to all followers using a provided socket.
+        """
+        msg = msg_format.serialize_message(self.payload)
+
+        for follower in self.My_followers:
+            try:
+                _, ip = follower.split('@')
+                sock.sendto(msg.encode(encoding), (ip, port))
+                print(f"Sent to {ip}:{port}")
+            except Exception as e:
+                print(f"Error sending to {follower}: {e}")
 
     @classmethod
     def receive(cls, raw: str) -> "Post":

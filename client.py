@@ -18,10 +18,12 @@ def initialize_sockets(port):
   global BROADCAST_SOCKET
 
   UNICAST_SOCKET = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  UNICAST_SOCKET.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   UNICAST_SOCKET.bind((config.CLIENT_IP, port))
 
   BROADCAST_SOCKET = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   BROADCAST_SOCKET.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+  BROADCAST_SOCKET.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   BROADCAST_SOCKET.bind(('0.0.0.0', port))
 
 def run_threads():

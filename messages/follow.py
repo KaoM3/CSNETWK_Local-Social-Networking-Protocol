@@ -46,7 +46,7 @@ class Follow(BaseMessage):
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
         """Send follow request and update local following list"""
         msg = msg_format.serialize_message(self.payload)
-        socket.sendto(msg.encode(encoding), (ip, port))
+        socket.sendto(msg.encode(encoding), (self.payload.get("TO"), port))
         client.add_following(self.to_user)
 
     @classmethod

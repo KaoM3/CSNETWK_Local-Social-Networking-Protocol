@@ -1,5 +1,6 @@
 from custom_types.user_id import UserID
 import threading
+import log
 
 user_id = None
 peers = []
@@ -37,6 +38,7 @@ def add_follower(follower: UserID):
         if follower not in followers:
             followers.append(follower)
             add_peer(follower)
+            log.info(f"Added follower: {follower}")
 
 def remove_follower(follower: UserID):
     with peers_lock:
@@ -44,6 +46,7 @@ def remove_follower(follower: UserID):
             raise ValueError(f"ERROR: {follower} is not of type UserID")
         if follower in followers:
             followers.remove(follower)
+            log.info(f"Removed follower: {follower}")
 
 def add_following(target: UserID):
     with peers_lock:
@@ -52,6 +55,7 @@ def add_following(target: UserID):
         if target not in following:
             following.append(target)
             add_peer(target)
+            log.info(f"Added following: {target}")
 
 def remove_following(target: UserID):
     with peers_lock:
@@ -59,6 +63,7 @@ def remove_following(target: UserID):
             raise ValueError(f"ERROR: {target} is not of type UserID")
         if target in following:
             following.remove(target)
+            log.info(f"Removed following: {target}")
 
 def get_followers() -> list[UserID]:
     return followers.copy()

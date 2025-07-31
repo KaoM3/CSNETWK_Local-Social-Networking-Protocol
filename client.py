@@ -81,3 +81,13 @@ def main():
 
 if __name__ == "__main__":
   main()
+
+def get_broadcast_socket() -> socket.socket:
+    if BROADCAST_SOCKET is None:
+        raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
+    return BROADCAST_SOCKET
+
+def get_unicast_socket() -> socket.socket:
+    if UNICAST_SOCKET is None:
+        raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
+    return UNICAST_SOCKET

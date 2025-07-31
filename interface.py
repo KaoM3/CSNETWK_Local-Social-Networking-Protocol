@@ -2,6 +2,7 @@ import router
 import config
 import keyword
 import log
+import client
 from custom_types.user_id import UserID
 from custom_types.token import Token
 from custom_types.base_message import BaseMessage
@@ -85,7 +86,9 @@ def create_message(msg_type: str): # ping , dm, profile
           new_msg_args[arg_name] = user_input
           break
 
+
   new_msg_obj = msg_class(**new_msg_args)
+  new_msg_obj.send(socket=client.get_unicast_socket(), ip=config.BROADCAST_IP, port=config.PORT, encoding=config.ENCODING)
   log.debug("\nNEW MESSAGE CREATED")
   print_message(new_msg_obj)
   return new_msg_obj

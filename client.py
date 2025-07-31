@@ -29,10 +29,20 @@ def run_threads():
   def unicast_receive_loop():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(1024)
+      log.info("UNICAST RECEIVED")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         interface.print_message(received_msg)
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
+  
+  def broadcast_receive_loop():
+    while True:
+      data, address = BROADCAST_SOCKET.recvfrom(1024)
+      log.info("BROADCAST RECEIVED")
+      received_msg = router.recv_message(data, address)
+      if received_msg is not None:
+        interface.print_message(received_msg)
+  threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():
@@ -51,8 +61,8 @@ def main():
 
   # Setup logging with verbose flag
   log.setup_logging(verbose=args.verbose or config.VERBOSE)
-  logging.info(f"Using port: {args.port or config.PORT}")
-  logging.info("Client IP: %s", config.CLIENT_IP)
+  log.info(f"Using port: {args.port or config.PORT}")
+  log.info(f"Client IP: {config.CLIENT_IP}")
 
   # Socket initialization
   initialize_sockets(args.port or config.PORT)

@@ -27,7 +27,7 @@ def get_broadcast_ip():
   """Get the broadcast address based on the local IP."""
   try:
     ip = ipaddress.ip_address(CLIENT_IP)
-    network = ipaddress.ip_network(f"{ip}/8", strict=False)  # Assuming /24 subnet
+    network = ipaddress.ip_network(f"{ip}/28", strict=False)  # Assuming /24 subnet
     print(f"Network Broadcast Address: {network.broadcast_address}")
     return str(network.broadcast_address)
   except ValueError as e:

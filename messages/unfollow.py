@@ -46,7 +46,7 @@ class Unfollow(BaseMessage):
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     """Send unfollow request and update local following list"""
     msg = msg_format.serialize_message(self.payload)
-    socket.sendto(msg.encode(encoding), (ip, port))
+    socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
     client_state.remove_following(self.to_user)
 
   @classmethod

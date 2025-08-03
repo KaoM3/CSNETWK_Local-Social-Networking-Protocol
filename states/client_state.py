@@ -50,7 +50,6 @@ class ClientState:
         log.info(f"Removed peer: {peer}")
 
   def add_follower(self, follower: UserID):
-    print("IN ADD FOLLOWER")
     with self._lock:
       self._validate_user_id(follower)
       if follower == self._user_id:
@@ -69,7 +68,9 @@ class ClientState:
   def add_following(self, target: UserID):
     with self._lock:
       self._validate_user_id(target)
-      if target not in self._following:
+      if target == self._user_id:
+        log.warn("Received FOLLOW from self; ignoring.")
+      elif target not in self._following:
         self._following.append(target)
         log.info(f"Added following: {target}")
 

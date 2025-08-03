@@ -4,7 +4,7 @@ from custom_types.user_id import UserID
 
 class ClientState:
   _instance = None
-  _lock = threading.Lock()
+  _lock = threading.RLock()
 
   def __new__(cls):
     if cls._instance is None:
@@ -50,11 +50,13 @@ class ClientState:
         log.info(f"Removed peer: {peer}")
 
   def add_follower(self, follower: UserID):
+    print("IN ADD FOLLOWER")
     with self._lock:
       self._validate_user_id(follower)
-      if follower not in self._followers:
+      if follower == self._user_id:
+        log.warn("Received FOLLOW from self; ignoring.")
+      elif follower not in self._followers:
         self._followers.append(follower)
-        self.add_peer(follower)
         log.info(f"Added follower: {follower}")
 
   def remove_follower(self, follower: UserID):
@@ -69,7 +71,6 @@ class ClientState:
       self._validate_user_id(target)
       if target not in self._following:
         self._following.append(target)
-        self.add_peer(target)
         log.info(f"Added following: {target}")
 
   def remove_following(self, target: UserID):

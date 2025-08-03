@@ -46,7 +46,7 @@ class Follow(BaseMessage):
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     """Send follow request and update local following list"""
     msg = msg_format.serialize_message(self.payload)
-    socket.sendto(msg.encode(encoding), (self.payload.get("TO"), port))
+    socket.sendto(msg.encode(encoding), (self.payload.get("TO").get_ip(), port))
     client_state.add_following(self.to_user)
 
   @classmethod
@@ -74,6 +74,7 @@ class Follow(BaseMessage):
   def receive(cls, raw: str) -> "Follow":
     """Process received follow request and update followers list"""
     follow_msg = cls.parse(msg_format.deserialize_message(raw))
+    print(follow_msg)
     client_state.add_follower(follow_msg.from_user)
     return follow_msg
 

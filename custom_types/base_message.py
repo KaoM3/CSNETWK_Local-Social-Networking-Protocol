@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import socket
+from utils import msg_format
 
 class BaseMessage(ABC):
   """
@@ -23,7 +24,7 @@ class BaseMessage(ABC):
 
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     """Sends this message using the provided socket"""
-    msg = format.serialize_message(self.payload)
+    msg = msg_format.serialize_message(self.payload)
     socket.sendto(msg.encode(encoding), (ip, port))
 
   @classmethod

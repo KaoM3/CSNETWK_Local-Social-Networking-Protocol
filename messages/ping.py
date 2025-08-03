@@ -2,7 +2,7 @@ from custom_types.user_id import UserID
 from utils import msg_format
 from custom_types.base_message import BaseMessage
 import socket
-import states.client as client
+from states.client_state import client_state
 
 class Ping(BaseMessage):
   TYPE = "PING"
@@ -32,7 +32,7 @@ class Ping(BaseMessage):
   @classmethod
   def receive(cls, raw: str) -> "Ping":
     received = cls.parse(msg_format.deserialize_message(raw))
-    client.add_peer(received.user_id)
+    client_state.add_peer(received.user_id)
     return received
 
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):

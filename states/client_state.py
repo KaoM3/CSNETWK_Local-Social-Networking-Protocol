@@ -33,18 +33,21 @@ class ClientState:
   def set_user_id(self, new_user_id: UserID):
     with self._lock:
       self._user_id = UserID.parse(new_user_id)
+      log.info(f"Set user_id: {self._user_id}")
 
   def add_peer(self, peer: UserID):
     with self._lock:
       self._validate_user_id(peer)
       if peer not in self._peers:
         self._peers.append(peer)
+        log.info(f"Added peer: {peer}")
 
   def remove_peer(self, peer: UserID):
     with self._lock:
       self._validate_user_id(peer)
       if peer in self._peers:
         self._peers.remove(peer)
+        log.info(f"Removed peer: {peer}")
 
   def add_follower(self, follower: UserID):
     with self._lock:

@@ -7,6 +7,7 @@ import time
 import router
 import interface
 from states.client_state import client_state
+from custom_types.user_id import UserID
 
 UNICAST_SOCKET = None
 BROADCAST_SOCKET = None
@@ -47,7 +48,7 @@ def run_threads():
   def broadcast_presence():
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      router.send_message(BROADCAST_SOCKET, "PING", {"TYPE": "PING", "USER_ID": f"{client_state.get_user_id()}"}, config.BROADCAST_IP, config.PORT)
+      router.send_message(BROADCAST_SOCKET, "PING", {"user_id": UserID.parse(f"{client_state.get_user_id()}")}, config.BROADCAST_IP, config.PORT)
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
@@ -85,7 +86,13 @@ def main():
   run_threads()
   
   # Main Program Loop
-  interface.main_loop()
+  while True:
+    user_input = input()
+    if user_input in router.MESSAGE_REGISTRY:
+      msg = router.MESSAGE_REGISTRY.get(user_input)
+      new_msg = interface.create_message(msg.__schema__)
+      ip_input = input("Enter dest ip: ")
+      router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
 
 if __name__ == "__main__":
   main()

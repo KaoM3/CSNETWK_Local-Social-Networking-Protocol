@@ -6,6 +6,7 @@ import log
 import time
 import router
 import interface
+import traceback
 from states.client_state import client_state
 from custom_types.user_id import UserID
 
@@ -70,8 +71,6 @@ def main():
 
   # Setup logging with verbose flag
   log.setup_logging(config.VERBOSE)
-  log.info(f"Using port: {config.PORT}")
-  log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
 
   # Socket initialization
   initialize_sockets(config.PORT)
@@ -87,12 +86,20 @@ def main():
   
   # Main Program Loop
   while True:
-    user_input = input()
+    log.info(f"WELCOME \"{client_state.get_user_id()}\"!")
+    log.info(f"Using port: {config.PORT}")
+    log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+    user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
-      msg = router.MESSAGE_REGISTRY.get(user_input)
-      new_msg = interface.create_message(msg.__schema__)
-      ip_input = input("Enter dest ip: ")
-      router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
+      try:
+        msg = router.MESSAGE_REGISTRY.get(user_input)
+        new_msg = interface.create_message(msg.__schema__)
+        ip_input = input("Enter dest ip: ")
+        router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
+      except Exception as e:
+        log.error("An error occurred:\n" + traceback.format_exc())
+    elif user_input is None:
+      break
 
 if __name__ == "__main__":
   main()

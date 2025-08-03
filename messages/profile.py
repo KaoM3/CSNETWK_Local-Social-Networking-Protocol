@@ -4,6 +4,7 @@ from custom_types.base_message import BaseMessage
 
 class Profile(BaseMessage):
   TYPE = "PROFILE"
+  __hidden__ = False
   __schema__ = {
     "TYPE": "PROFILE",
     "USER_ID": {"type": UserID, "required": True, "input": True},

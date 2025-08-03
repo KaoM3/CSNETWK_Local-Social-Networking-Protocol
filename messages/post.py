@@ -11,7 +11,7 @@ class Post(BaseMessage):
   """
 
   TYPE = "POST"
-
+  __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
     "USER_ID": {"type": UserID, "required": True, "input": True},

@@ -12,6 +12,8 @@ class BaseMessage(ABC):
     super().__init_subclass__()
     if not hasattr(cls, '__schema__'):
       raise TypeError(f"Class {cls.__name__} must define __schema__")
+    if not hasattr(cls, '__hidden__'):
+      raise TypeError(f"Class {cls.__name__} must define __hidden__")
         
   @classmethod
   @abstractmethod

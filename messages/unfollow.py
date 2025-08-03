@@ -13,7 +13,7 @@ class Unfollow(BaseMessage):
   """
 
   TYPE = "UNFOLLOW"
-
+  __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
     "FROM": {"type": UserID, "required": True, "input": True},

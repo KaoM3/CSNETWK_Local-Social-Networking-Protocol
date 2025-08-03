@@ -13,7 +13,7 @@ class Follow(BaseMessage):
   """
 
   TYPE = "FOLLOW"
-
+  __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
     "FROM": {"type": UserID, "required": True, "input": True},

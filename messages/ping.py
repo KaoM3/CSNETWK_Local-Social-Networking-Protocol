@@ -6,6 +6,7 @@ from states.client_state import client_state
 
 class Ping(BaseMessage):
   TYPE = "PING"
+  __hidden__ = True
   __schema__ = {
     "TYPE": TYPE,
     "USER_ID": {"type": UserID, "required": True, "input": True}

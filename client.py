@@ -6,7 +6,6 @@ import log
 import time
 import router
 import interface
-import logging
 from states import client
 
 UNICAST_SOCKET = None
@@ -56,16 +55,25 @@ def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
   parser.add_argument("--port", type=int, help="Port number to use")
+  parser.add_argument("--subnet", type=int, help="Subnet Mask of the network")
   parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
 
+  # Update config with compile arguments
+  if args.port:
+    config.PORT = args.port
+  if args.subnet:
+    config.SUBNET_MASK = args.subnet
+  if args.verbose:
+    config.VERBOSE = args.verbose
+
   # Setup logging with verbose flag
-  log.setup_logging(verbose=args.verbose or config.VERBOSE)
-  log.info(f"Using port: {args.port or config.PORT}")
-  log.info(f"Client IP: {config.CLIENT_IP}")
+  log.setup_logging(config.VERBOSE)
+  log.info(f"Using port: {config.PORT}")
+  log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
 
   # Socket initialization
-  initialize_sockets(args.port or config.PORT)
+  initialize_sockets(config.PORT)
 
   # Initialize router
   router.load_messages(config.MESSAGES_DIR)
@@ -83,11 +91,11 @@ if __name__ == "__main__":
   main()
 
 def get_broadcast_socket() -> socket.socket:
-    if BROADCAST_SOCKET is None:
-        raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
-    return BROADCAST_SOCKET
+  if BROADCAST_SOCKET is None:
+    raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
+  return BROADCAST_SOCKET
 
 def get_unicast_socket() -> socket.socket:
-    if UNICAST_SOCKET is None:
-        raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
-    return UNICAST_SOCKET
+  if UNICAST_SOCKET is None:
+    raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
+  return UNICAST_SOCKET

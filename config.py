@@ -23,12 +23,11 @@ def get_ip():
     
 
 # Get Broadcast IP
-def get_broadcast_ip():
+def get_broadcast_ip(subnet_mask: int):
   """Get the broadcast address based on the local IP."""
   try:
     ip = ipaddress.ip_address(CLIENT_IP)
-    network = ipaddress.ip_network(f"{ip}/28", strict=False)  # Assuming /24 subnet
-    print(f"Network Broadcast Address: {network.broadcast_address}")
+    network = ipaddress.ip_network(f"{ip}/{subnet_mask}", strict=False)  # Assuming /24 subnet
     return str(network.broadcast_address)
   except ValueError as e:
     print(f"Error determining broadcast address: {e}")
@@ -36,9 +35,10 @@ def get_broadcast_ip():
 
 PING_INTERVAL = 300
 PORT = 50999
+SUBNET_MASK = 24
 ENCODING = "utf-8"
 CLIENT_IP = get_ip()
-BROADCAST_IP = get_broadcast_ip()
+BROADCAST_IP = get_broadcast_ip(SUBNET_MASK)
 VERBOSE = False
 DEFAULT_TTL = 300
 MESSAGES_DIR = "messages"

@@ -6,6 +6,7 @@ from custom_types.token import Token
 from custom_types.base_message import BaseMessage
 from utils import msg_format
 import states.client as client
+import log
 
 class Follow(BaseMessage):
     """
@@ -46,7 +47,7 @@ class Follow(BaseMessage):
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
         """Send follow request and update local following list"""
         msg = msg_format.serialize_message(self.payload)
-        socket.sendto(msg.encode(encoding), (self.payload.get("TO"), port))
+        socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
         client.add_following(self.to_user)
 
     @classmethod
@@ -75,6 +76,7 @@ class Follow(BaseMessage):
         """Process received follow request and update followers list"""
         follow_msg = cls.parse(msg_format.deserialize_message(raw))
         client.add_follower(follow_msg.from_user)
+        log.info(f"User {follow_msg.from_user.get_username()} has followed you")
         return follow_msg
 
 __message__ = Follow

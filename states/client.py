@@ -38,7 +38,7 @@ def add_follower(follower: UserID):
         if follower not in followers:
             followers.append(follower)
             add_peer(follower)
-            log.info(f"Added follower: {follower}")
+            # Log message handled by Follow.receive() for better context
 
 def remove_follower(follower: UserID):
     with peers_lock:
@@ -46,7 +46,9 @@ def remove_follower(follower: UserID):
             raise ValueError(f"ERROR: {follower} is not of type UserID")
         if follower in followers:
             followers.remove(follower)
-            log.info(f"Removed follower: {follower}")
+            if follower not in following:  # Only remove from peers if we're not following them
+                remove_peer(follower)
+            # Log message handled by Unfollow.receive() for better context
 
 def add_following(target: UserID):
     with peers_lock:
@@ -55,7 +57,7 @@ def add_following(target: UserID):
         if target not in following:
             following.append(target)
             add_peer(target)
-            log.info(f"Added following: {target}")
+            log.info(f"You are now following {target.get_username()}")
 
 def remove_following(target: UserID):
     with peers_lock:
@@ -63,7 +65,9 @@ def remove_following(target: UserID):
             raise ValueError(f"ERROR: {target} is not of type UserID")
         if target in following:
             following.remove(target)
-            log.info(f"Removed following: {target}")
+            if target not in followers:  # Only remove from peers if they're not following us
+                remove_peer(target)
+            log.info(f"You have unfollowed {target.get_username()}")
 
 def get_followers() -> list[UserID]:
     return followers.copy()

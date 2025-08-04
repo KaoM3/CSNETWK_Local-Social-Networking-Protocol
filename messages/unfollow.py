@@ -6,6 +6,7 @@ from custom_types.token import Token
 from custom_types.base_message import BaseMessage
 from utils import msg_format
 import states.client as client
+import log
 
 class Unfollow(BaseMessage):
     """
@@ -46,7 +47,7 @@ class Unfollow(BaseMessage):
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
         """Send unfollow request and update local following list"""
         msg = msg_format.serialize_message(self.payload)
-        socket.sendto(msg.encode(encoding), (ip, port))
+        socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
         client.remove_following(self.to_user)
 
     @classmethod
@@ -75,6 +76,7 @@ class Unfollow(BaseMessage):
         """Process received unfollow request and update followers list"""
         unfollow_msg = cls.parse(msg_format.deserialize_message(raw))
         client.remove_follower(unfollow_msg.from_user)
+        log.info(f"User {unfollow_msg.from_user.get_username()} has unfollowed you")
         return unfollow_msg
 
 __message__ = Unfollow

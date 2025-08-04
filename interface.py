@@ -1,4 +1,4 @@
-import router
+import os
 import config
 import keyword
 import log
@@ -12,26 +12,30 @@ type_parsers = {
   # add more types as needed
 }
 
-def main_loop():
+def clear_screen():
+  os.system('cls' if os.name == 'nt' else 'clear')
+
+def get_message_type(message_registry: dict):
   while True:
     print("\nSelect an action:")
-    for i, (key, _) in enumerate(router.MESSAGE_REGISTRY.items(), start=1):
+    for i, (key, _) in enumerate(message_registry.items(), start=1):
       print(f"{i}. {key}")
-    print(f"{i + 1}. Exit")  # Add exit option at the end
+    print(f"{i + 1}. Exit")
+    print(f"{i + 2}. Clear Screen")
     choice = input("Enter your action number: ").strip()
-
     if choice.isdigit():
       choice_num = int(choice)
-      if 1 <= choice_num <= len(router.MESSAGE_REGISTRY):
-        selected_key = list(router.MESSAGE_REGISTRY.keys())[choice_num - 1]
+      if 1 <= choice_num <= len(message_registry):
+        selected_key = list(message_registry.keys())[choice_num - 1]
         print(f"\nYou selected: {selected_key}")
-        create_message(selected_key)
-      elif choice_num == len(router.MESSAGE_REGISTRY) + 1:
+        return selected_key
+      elif choice_num == len(message_registry) + 1:
         print("Exiting. Goodbye!")
-        break
+        return None
+      elif choice_num == len(message_registry) + 2:
+        clear_screen()
       else:
         print("Invalid choice. Please enter a valid number.")
-
     else:
       print("Invalid input. Please enter a number.")
 
@@ -42,56 +46,65 @@ def print_message(msg_obj: BaseMessage):
   for field, value in msg_obj.payload.items():
     log.debug(f"{field}: {value}")
 
-def create_message(msg_type: str): # ping , dm, profile
+def get_field(field: str, rules: dict):
   """
-  Creates a new message object of msg_type.
+  Gets user input matching the rules provided
 
   Parameters:
-    msg_type (str): The identifier for the message class to create.
+    field (string): the field requiring the input
+    rules (dict): rules or flags of the field
 
   Returns:
-    An instance of the message class initialized with user-provided values.
-
+    The input given by the user, matches type indicated in rules
   """
-  msg_class = router.get_module(msg_type)
-  msg_schema = msg_class.__schema__
+  result = None
+  while True:
+    user_input = input(f"Enter {field}: ").strip()
+    while not user_input:
+      if "default" in rules:
+        user_input = rules.get("default")
+      user_input = input(f"{field} cannot be empty. Try again: ").strip()      
+    # For custom data types that need parsers for validation, else no validation
+    typ = rules.get("type", None)
+    parser = type_parsers.get(typ)
+    if parser:
+      try:
+        result = parser(user_input)
+        break
+      except Exception as e:
+        log.warn(f"{e}")
+    else:
+      result = user_input
+      break
 
+  return result
+
+def create_message(msg_schema: dict) -> dict:
+  """
+  Creates a new dictionary object matching the schema provided (msg_schema)
+
+  Parameters:
+    msg_schema (dict): The schema of a message module
+
+  Returns:
+    A dictionary matching the inputs asked by the schema
+  """
   new_msg_args = {}
   for field, rules in msg_schema.items():
-    # TYPE field, autofills with schema TYPE
     if field == "TYPE":
-      log.info(f"TYPE: {rules}")
       continue
-    # Gets the input args for the message type constructor
     if rules.get("input", False):
-      while True:
-        user_input = input(f"Enter {field}: ").strip()
-        while not user_input:
-          user_input = input(f"{field} cannot be empty. Try again: ").strip()
-        typ = rules.get("type", None)
-        parser = type_parsers.get(typ)
-        arg_name = field.lower()
-        # Handles for argument names that are keywords
-        if keyword.iskeyword(arg_name):
-          arg_name = arg_name+"_"
-        # For custom data types that need parsers for validation, else no validation
-        if parser:
-          try:
-            new_msg_args[arg_name] = parser(user_input)
-            break
-          except Exception as e:
-            log.warn(f"{e}")
-        else:
-          new_msg_args[arg_name] = user_input
-          break
+      field_data = get_field(field, rules)
+      arg_name = field.lower()
+      # Handles for argument names that are keywords
+      if keyword.iskeyword(arg_name):
+        arg_name = arg_name+"_"
+      new_msg_args[arg_name] = field_data
 
-  new_msg_obj = msg_class(**new_msg_args)
-  log.debug("\nNEW MESSAGE CREATED")
-  print_message(new_msg_obj)
-  return new_msg_obj
+  log.debug(new_msg_args)
+  return new_msg_args
 
 def get_user_id() -> str:
   username = input("Enter username: ")
   user_id = f"{username}@{config.CLIENT_IP}"
-  print(f"WELCOME \"{user_id}\"!")
   return user_id

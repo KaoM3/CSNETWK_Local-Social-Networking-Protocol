@@ -43,7 +43,7 @@ def load_messages(dir: str):
 
 def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: int):
   message_class = MESSAGE_REGISTRY.get(type)
-  message_obj = message_class.parse(data)
+  message_obj = message_class(**data)
   message_obj.send(socket, ip, port, config.ENCODING)
 
 def recv_message(raw: bytes, address) -> BaseMessage:
@@ -52,7 +52,9 @@ def recv_message(raw: bytes, address) -> BaseMessage:
     msg_type = msg_format.extract_message_type(msg_str)
 
     message_obj = MESSAGE_REGISTRY[msg_type].receive(msg_str)
+
     log.receive(f"RECEIVED: {message_obj} FROM {address}")
+    log.receive(f"MESSAGE: {message_obj.payload}")
     return message_obj
   except Exception as err:
     log.drop({raw.decode(config.ENCODING, errors="ignore")})

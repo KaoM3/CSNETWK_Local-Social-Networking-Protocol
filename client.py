@@ -6,8 +6,9 @@ import log
 import time
 import router
 import interface
-import logging
-from states import client
+import traceback
+from states.client_state import client_state
+from custom_types.user_id import UserID
 
 UNICAST_SOCKET = None
 BROADCAST_SOCKET = None
@@ -50,7 +51,7 @@ def run_threads():
   def broadcast_presence():
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      router.send_message(BROADCAST_SOCKET, "PING", {"TYPE": "PING", "USER_ID": f"{client.get_user_id()}"}, config.BROADCAST_IP, config.PORT)
+      router.send_message(BROADCAST_SOCKET, "PING", {"user_id": UserID.parse(f"{client_state.get_user_id()}")}, config.BROADCAST_IP, config.PORT)
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
@@ -58,28 +59,59 @@ def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
   parser.add_argument("--port", type=int, help="Port number to use")
+  parser.add_argument("--subnet", type=int, help="Subnet Mask of the network")
   parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
 
+  # Update config with compile arguments
+  if args.port:
+    config.PORT = args.port
+  if args.subnet:
+    config.SUBNET_MASK = args.subnet
+  if args.verbose:
+    config.VERBOSE = args.verbose
+
   # Setup logging with verbose flag
-  log.setup_logging(verbose=args.verbose or config.VERBOSE)
-  log.info(f"Using port: {args.port or config.PORT}")
-  log.info(f"Client IP: {config.CLIENT_IP}")
+  log.setup_logging(config.VERBOSE)
 
   # Socket initialization
-  initialize_sockets(args.port or config.PORT)
+  initialize_sockets(config.PORT)
 
   # Initialize router
   router.load_messages(config.MESSAGES_DIR)
 
   # Set client UserID
-  client.set_user_id(interface.get_user_id())
+  client_state.set_user_id(interface.get_user_id())
 
   # Run Threads
   run_threads()
   
   # Main Program Loop
-  interface.main_loop()
+  while True:
+    log.info(f"WELCOME \"{client_state.get_user_id()}\"!")
+    log.info(f"Using port: {config.PORT}")
+    log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+    user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
+    if user_input in router.MESSAGE_REGISTRY:
+      try:
+        msg = router.MESSAGE_REGISTRY.get(user_input)
+        new_msg = interface.create_message(msg.__schema__)
+        ip_input = input("Enter dest ip: ")
+        router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
+      except Exception as e:
+        log.error("An error occurred:\n" + traceback.format_exc())
+    elif user_input is None:
+      break
 
 if __name__ == "__main__":
   main()
+
+def get_broadcast_socket() -> socket.socket:
+  if BROADCAST_SOCKET is None:
+    raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
+  return BROADCAST_SOCKET
+
+def get_unicast_socket() -> socket.socket:
+  if UNICAST_SOCKET is None:
+    raise RuntimeError("Sockets not initialized. Make sure client.initialize_sockets() was called.")
+  return UNICAST_SOCKET

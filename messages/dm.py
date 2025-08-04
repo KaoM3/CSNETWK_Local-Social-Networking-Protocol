@@ -6,6 +6,7 @@ from custom_types.base_message import BaseMessage
 
 class Dm(BaseMessage):
   TYPE = "DM"
+  __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
     "FROM": {"type": UserID, "required": True, "input": True},

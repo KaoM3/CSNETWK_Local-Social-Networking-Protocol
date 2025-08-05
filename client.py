@@ -91,6 +91,7 @@ def main():
     log.info(f"WELCOME \"{client_state.get_user_id()}\"!")
     log.info(f"Using port: {config.PORT}")
     log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+    log.info(f"Broadcast IP: {config.BROADCAST_IP}")
     user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
       try:

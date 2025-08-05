@@ -33,7 +33,7 @@ def get_broadcast_ip(subnet_mask: int):
     print(f"Error determining broadcast address: {e}")
     sys.exit(1)
 
-PING_INTERVAL = 5
+PING_INTERVAL = 300
 PORT = 50999
 SUBNET_MASK = 24
 ENCODING = "utf-8"

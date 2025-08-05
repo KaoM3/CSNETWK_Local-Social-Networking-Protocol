@@ -93,6 +93,8 @@ def main():
     log.info(f"Using port: {config.PORT}")
     log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
     log.info(f"Broadcast IP: {config.BROADCAST_IP}")
+    log.info(f"{client_state.get_followers()}")
+    log.info(f"{client_state.get_following()}")
     user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
       try:

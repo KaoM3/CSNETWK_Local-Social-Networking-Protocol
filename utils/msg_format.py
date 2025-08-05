@@ -1,7 +1,9 @@
 import secrets
 import re
+import config
 from datetime import datetime, timezone
 from custom_types.token import Token
+from custom_types.user_id import UserID
   
 def serialize_message(msg: dict) -> str:
   """Serializes `msg` into a string, ready to be encoded and sent over the network"""
@@ -82,10 +84,29 @@ def validate_message(msg: dict, schema: dict):
       if not isinstance(msg[field], rules["type"]):
         raise TypeError(f"Invalid type for {field}: expected {rules['type'].__name__}, got {type(msg[field]).__name__}")
 
+def sanitize_ttl(ttl: int):
+  try:
+    ttl = int(ttl)
+    if ttl <= 0:
+      raise ValueError()
+  except (ValueError, TypeError):
+    ttl = config.DEFAULT_TTL
+  return ttl
+
 def isTokenExpired(token: Token) -> bool:
   if token.valid_until > datetime.now().timestamp():
     return False
   return True
+
+def validate_token(token: Token, *, expected_user_id: UserID, expected_scope: Token.Scope):
+  if token.user_id != expected_user_id:
+    raise ValueError("Invalid Token: user_id mismatch")
+  
+  if isTokenExpired(token):
+    raise ValueError("Invalid Token: expired")
+  
+  if token.scope != expected_scope:
+    raise ValueError(f"Invalid Token: expected scope '{expected_scope}', got '{token.scope}'")
 
 def unix_to_datetime(utc_timestamp) -> datetime:
   utc_datetime = datetime.fromtimestamp(utc_timestamp, tz=timezone.utc)

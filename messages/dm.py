@@ -3,6 +3,7 @@ from custom_types.token import Token
 from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
+from states.client_state import client_state
 
 class Dm(BaseMessage):
   TYPE = "DM"
@@ -29,15 +30,15 @@ class Dm(BaseMessage):
       "TOKEN": self.token,
     }
   
-  def __init__(self, from_: UserID, to: UserID, content: str):
+  def __init__(self, to: UserID, content: str):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
-    self.from_user = from_
+    self.from_user = client_state.get_user_id()
     self.to_user = to
     self.content = content
     self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    self.token = Token(from_, unix_now + 600, Token.Scope.CHAT) # 10 minutes valid
+    self.token = Token(self.from_user, unix_now + 600, Token.Scope.CHAT) # 10 minutes valid
 
   
   @classmethod

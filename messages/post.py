@@ -31,13 +31,13 @@ class Post(BaseMessage):
       "TOKEN": self.token,
     }
 
-  def __init__(self, user_id: UserID, content: str, ttl: int = 3600):
+  def __init__(self, content: str, ttl: int = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
-    self.user_id = user_id
+    self.user_id = client_state.get_user_id()
     self.content = content
     self.message_id = msg_format.generate_message_id()
-    self.token = Token(user_id, unix_now + ttl, Token.Scope.BROADCAST)
+    self.token = Token(self.user_id, unix_now + ttl, Token.Scope.BROADCAST)
 
   @classmethod
   def parse(cls, data: dict) -> "Post":

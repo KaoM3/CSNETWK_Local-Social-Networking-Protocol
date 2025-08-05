@@ -52,7 +52,7 @@ def run_threads():
   def broadcast_presence():
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      router.send_message(BROADCAST_SOCKET, "PING", {"user_id": UserID.parse(f"{client_state.get_user_id()}")}, config.BROADCAST_IP, config.PORT)
+      router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 

@@ -19,16 +19,18 @@ class Ping(BaseMessage):
       "USER_ID": self.user_id
     }
 
-  def __init__(self, user_id: UserID):
+  def __init__(self):
     self.type = self.TYPE
-    self.user_id = user_id
+    self.user_id = client_state.get_user_id()
     msg_format.validate_message(self.payload, self.__schema__)
 
   @classmethod
   def parse(cls, data: dict) -> "Ping":
-    return cls(
-      user_id=UserID.parse(data["USER_ID"])
-    )
+    new_instance = cls.__new__(cls)
+    new_instance.type = data["TYPE"]
+    new_instance.user_id = UserID.parse(data["USER_ID"])
+    msg_format.validate_message(new_instance.payload, cls.__schema__)
+    return new_instance
         
   @classmethod
   def receive(cls, raw: str) -> "Ping":

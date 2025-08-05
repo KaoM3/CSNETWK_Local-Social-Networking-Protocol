@@ -1,4 +1,5 @@
 from utils import msg_format
+from states.client_state import client_state
 from custom_types.user_id import UserID
 from custom_types.base_message import BaseMessage
 
@@ -21,9 +22,9 @@ class Profile(BaseMessage):
       "STATUS": self.status
     }
   
-  def __init__(self, user_id: UserID, display_name: str, status: str):
+  def __init__(self, display_name: str, status: str):
     self.type = self.TYPE
-    self.user_id = user_id
+    self.user_id = client_state.get_user_id()
     self.display_name = display_name
     self.status = status
     msg_format.validate_message(self.payload, self.__schema__)

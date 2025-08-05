@@ -34,14 +34,14 @@ class Follow(BaseMessage):
       "TOKEN": self.token,
     }
 
-  def __init__(self, from_: UserID, to: UserID, ttl: int = 3600):
+  def __init__(self, to: UserID, ttl: int = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
-    self.from_user = from_
+    self.from_user = client_state.get_user_id()
     self.to_user = to
     self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    self.token = Token(from_, unix_now + ttl, Token.Scope.FOLLOW)
+    self.token = Token(self.from_user, unix_now + ttl, Token.Scope.FOLLOW)
 
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     """Send follow request and update local following list"""

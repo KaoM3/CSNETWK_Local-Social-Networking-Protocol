@@ -78,6 +78,7 @@ class Post(BaseMessage):
     following = client_state.get_following()
     if received.user_id not in following:
       raise ValueError(f"{received.user_id} is not followed by this client")
+    return received
 
 
 __message__ = Post

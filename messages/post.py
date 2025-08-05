@@ -15,8 +15,8 @@ class Post(BaseMessage):
   __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
-    "USER_ID": {"type": UserID, "required": True, "input": True},
-    "CONTENT": {"type": str, "required": True, "input": True},
+    "USER_ID": {"type": UserID, "required": True},
+    "CONTENT": {"type": str, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
     "TOKEN": {"type": Token, "required": True},
   }

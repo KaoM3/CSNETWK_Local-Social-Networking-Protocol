@@ -20,7 +20,7 @@ def setup_logging(verbose):
     level=level,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-      logging.FileHandler("app.log"),
+      logging.FileHandler("app.log", mode="w"),
     ]
   )
 

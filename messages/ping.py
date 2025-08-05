@@ -9,7 +9,7 @@ class Ping(BaseMessage):
   __hidden__ = True
   __schema__ = {
     "TYPE": TYPE,
-    "USER_ID": {"type": UserID, "required": True, "input": True}
+    "USER_ID": {"type": UserID, "required": True}
   }
 
   @property

@@ -5,6 +5,7 @@ import argparse
 import log
 import time
 import router
+import inspect
 import interface
 import traceback
 from states.client_state import client_state
@@ -96,7 +97,9 @@ def main():
     if user_input in router.MESSAGE_REGISTRY:
       try:
         msg = router.MESSAGE_REGISTRY.get(user_input)
-        new_msg = interface.create_message(msg.__schema__)
+        #new_msg = interface.create_message(msg.__schema__)
+        msg_constructor_args = inspect.signature(msg.__init__)
+        new_msg = interface.get_func_args(msg_constructor_args)
         ip_input = input("Enter dest ip: ")
         router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
       except Exception as e:

@@ -9,9 +9,9 @@ class Dm(BaseMessage):
   __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
-    "FROM": {"type": UserID, "required": True, "input": True},
-    "TO": {"type": UserID, "required": True, "input": True},
-    "CONTENT": {"type": str, "required": True, "input": True},
+    "FROM": {"type": UserID, "required": True},
+    "TO": {"type": UserID, "required": True},
+    "CONTENT": {"type": str, "required": True},
     "TIMESTAMP": {"type": int, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
     "TOKEN": {"type": Token, "required": True},

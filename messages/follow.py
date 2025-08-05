@@ -67,6 +67,17 @@ class Follow(BaseMessage):
     self.message_id = message_id
 
     self.token = Token.parse(data["TOKEN"])
+
+    # Extra Token Validation
+    if self.user_id != self.token.user_id:
+      raise ValueError("Invalid Token: user_id mismatch")
+    
+    if msg_format.isTokenExpired(self.token):
+      raise ValueError("Invalid Token: expired")
+    
+    if self.token.scope != Token.Scope.FOLLOW:
+      raise ValueError("Invalid Token: scope mismatch")
+    
     msg_format.validate_message(self.payload, self.__schema__)
     return self
 

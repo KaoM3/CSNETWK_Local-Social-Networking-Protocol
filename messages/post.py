@@ -12,6 +12,7 @@ class Post(BaseMessage):
   """
 
   TYPE = "POST"
+  SCOPE = Token.Scope.BROADCAST
   __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
@@ -37,35 +38,25 @@ class Post(BaseMessage):
     self.user_id = client_state.get_user_id()
     self.content = content
     self.message_id = msg_format.generate_message_id()
-    self.token = Token(self.user_id, unix_now + ttl, Token.Scope.BROADCAST)
+    ttl = msg_format.sanitize_ttl(ttl)
+    self.token = Token(self.user_id, unix_now + ttl, self.SCOPE)
 
   @classmethod
   def parse(cls, data: dict) -> "Post":
-    return cls.__new__(cls)._init_from_dict(data)
-
-  def _init_from_dict(self, data: dict):
-    self.type = data["TYPE"]
-    self.user_id = UserID.parse(data["USER_ID"])
-    self.content = str(data["CONTENT"])
+    new_obj = cls.__new__(cls)
+    new_obj.type = data["TYPE"]
+    new_obj.user_id = UserID.parse(data["USER_ID"])
+    new_obj.content = str(data["CONTENT"])
 
     message_id = data["MESSAGE_ID"]
     msg_format.validate_message_id(message_id)
-    self.message_id = message_id
+    new_obj.message_id = message_id
 
-    self.token = Token.parse(data["TOKEN"])
+    new_obj.token = Token.parse(data["TOKEN"])
+    msg_format.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.user_id)
 
-    # Extra Token Validation
-    if self.user_id != self.token.user_id:
-      raise ValueError("Invalid Token: user_id mismatch")
-    
-    if msg_format.isTokenExpired(self.token):
-      raise ValueError("Invalid Token: expired")
-    
-    if self.token.scope != Token.Scope.BROADCAST:
-      raise ValueError("Invalid Token: scope mismatch")
-
-    msg_format.validate_message(self.payload, self.__schema__)
-    return self
+    msg_format.validate_message(new_obj.payload, new_obj.__schema__)
+    return new_obj
 
   def send(self, sock: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
     """
@@ -83,7 +74,10 @@ class Post(BaseMessage):
 
   @classmethod
   def receive(cls, raw: str) -> "Post":
-    return cls.parse(msg_format.deserialize_message(raw))
+    received = cls.parse(msg_format.deserialize_message(raw))
+    following = client_state.get_following()
+    if received.user_id not in following:
+      raise ValueError(f"{received.user_id} is not followed by this client")
 
 
 __message__ = Post

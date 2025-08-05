@@ -7,6 +7,7 @@ from states.client_state import client_state
 
 class Dm(BaseMessage):
   TYPE = "DM"
+  SCOPE = Token.Scope.CHAT
   __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
@@ -30,7 +31,7 @@ class Dm(BaseMessage):
       "TOKEN": self.token,
     }
   
-  def __init__(self, to: UserID, content: str):
+  def __init__(self, to: UserID, content: str, ttl: int = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
     self.from_user = client_state.get_user_id()
@@ -38,33 +39,36 @@ class Dm(BaseMessage):
     self.content = content
     self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    self.token = Token(self.from_user, unix_now + 600, Token.Scope.CHAT) # 10 minutes valid
+    ttl = msg_format.sanitize_ttl(ttl)
+    self.token = Token(self.from_user, unix_now + ttl, self.SCOPE)
 
-  
   @classmethod
   def parse(cls, data: dict) -> "Dm":
-    return cls.__new__(cls)._init_from_dict(data)
-  
-  def _init_from_dict(self, data: dict):
-    self.type = data["TYPE"]
-    self.from_user = UserID.parse(data["FROM"])
-    self.to_user = UserID.parse(data["TO"])
-    self.content = data["CONTENT"]
+    new_obj = cls.__new__(cls)
+    new_obj.type = data["TYPE"]
+    new_obj.from_user = UserID.parse(data["FROM"])
+    new_obj.to_user = UserID.parse(data["TO"])
+    new_obj.content = data["CONTENT"]
     
     timestamp = int(data["TIMESTAMP"])
     msg_format.validate_timestamp(timestamp)
-    self.timestamp = timestamp
+    new_obj.timestamp = timestamp
     
     message_id = data["MESSAGE_ID"]
     msg_format.validate_message_id(message_id)
-    self.message_id = message_id
+    new_obj.message_id = message_id
     
-    self.token = Token.parse(data["TOKEN"])
-    msg_format.validate_message(self.payload, self.__schema__)
-    return self
+    new_obj.token = Token.parse(data["TOKEN"])
+    msg_format.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.from_user)
+    
+    msg_format.validate_message(new_obj.payload, new_obj.__schema__)
+    return new_obj
 
   @classmethod
   def receive(cls, raw: str) -> "Dm":
-    return cls.parse(msg_format.deserialize_message(raw))
+    received = cls.parse(msg_format.deserialize_message(raw))
+    if received.to_user != client_state.get_user_id():
+      raise ValueError("Message is not intended to be received by this client")
+    return received
 
 __message__ = Dm

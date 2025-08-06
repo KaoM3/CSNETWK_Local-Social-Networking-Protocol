@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+import socket
 
 class Dm(BaseMessage):
   TYPE = "DM"
@@ -63,6 +64,10 @@ class Dm(BaseMessage):
     
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
+  
+  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
+    msg = msg_format.serialize_message(self.payload)
+    socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
 
   @classmethod
   def receive(cls, raw: str) -> "Dm":

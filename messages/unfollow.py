@@ -13,6 +13,7 @@ class Unfollow(BaseMessage):
   """
 
   TYPE = "UNFOLLOW"
+  SCOPE = Token.Scope.FOLLOW
   __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
@@ -41,7 +42,7 @@ class Unfollow(BaseMessage):
     self.to_user = to
     self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    self.token = Token(self.from_user, unix_now + ttl, Token.Scope.FOLLOW)
+    self.token = Token(self.from_user, unix_now + ttl, self.SCOPE)
 
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     """Send unfollow request and update local following list"""
@@ -51,40 +52,33 @@ class Unfollow(BaseMessage):
 
   @classmethod
   def parse(cls, data: dict) -> "Unfollow":
-    return cls.__new__(cls)._init_from_dict(data)
-
-  def _init_from_dict(self, data: dict):
-    self.type = data["TYPE"]
-    self.from_user = UserID.parse(data["FROM"])
-    self.to_user = UserID.parse(data["TO"])
+    new_obj = cls.__new__(cls)
+  
+    new_obj.type = data["TYPE"]
+    new_obj.from_user = UserID.parse(data["FROM"])
+    new_obj.to_user = UserID.parse(data["TO"])
 
     timestamp = int(data["TIMESTAMP"])
     msg_format.validate_timestamp(timestamp)
-    self.timestamp = timestamp
+    new_obj.timestamp = timestamp
 
     message_id = data["MESSAGE_ID"]
     msg_format.validate_message_id(message_id)
-    self.message_id = message_id
+    new_obj.message_id = message_id
 
-    self.token = Token.parse(data["TOKEN"])
-    # Extra Token Validation
-    if self.user_id != self.token.user_id:
-      raise ValueError("Invalid Token: user_id mismatch")
+    new_obj.token = Token.parse(data["TOKEN"])
+    msg_format.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.from_user)
     
-    if msg_format.isTokenExpired(self.token):
-      raise ValueError("Invalid Token: expired")
-    
-    if self.token.scope != Token.Scope.FOLLOW:
-      raise ValueError("Invalid Token: scope mismatch")
-    
-    msg_format.validate_message(self.payload, self.__schema__)
-    return self
+    msg_format.validate_message(new_obj.payload, new_obj.__schema__)
+    return new_obj
 
   @classmethod
   def receive(cls, raw: str) -> "Unfollow":
     """Process received unfollow request and update followers list"""
-    unfollow_msg = cls.parse(msg_format.deserialize_message(raw))
-    client_state.remove_follower(unfollow_msg.from_user)
-    return unfollow_msg
+    received = cls.parse(msg_format.deserialize_message(raw))
+    if received.to_user != client_state.get_user_id():
+      raise ValueError("Message is not intended to be received by this client")
+    client_state.remove_follower(received.from_user)
+    return received
 
 __message__ = Unfollow

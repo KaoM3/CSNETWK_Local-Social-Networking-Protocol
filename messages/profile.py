@@ -38,11 +38,11 @@ class Profile(BaseMessage):
 
   @classmethod
   def parse(cls, data: str) -> "Profile":
-    return cls(
-      user_id = UserID.parse(data["USER_ID"]),
-      display_name = str(data["DISPLAY_NAME"]),
-      status = str(data["STATUS"])
-    )
+    new_obj = cls.__new__(cls)
+    new_obj.user_id = UserID.parse(data["USER_ID"])
+    new_obj.display_name = str(data["DISPLAY_NAME"])
+    new_obj.status = str(data["STATUS"])
+    return new_obj
   
   @classmethod
   def receive(cls, raw: str) -> "Profile":

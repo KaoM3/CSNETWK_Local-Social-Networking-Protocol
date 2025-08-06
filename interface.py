@@ -92,7 +92,6 @@ def print_message(msg_obj: BaseMessage):
   """
   Prints the message's payload in a readable format.
   """
-  print(config.VERBOSE)
   msg_info = msg_obj.info(config.VERBOSE)
   if msg_info != "":
     client_logger.info(msg_info)

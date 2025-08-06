@@ -37,6 +37,11 @@ class Ping(BaseMessage):
     received = cls.parse(msg_format.deserialize_message(raw))
     client_state.add_peer(received.user_id)
     return received
+  
+  def info(self, verbose:bool=False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return ""
 
   def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
     msg = msg_format.serialize_message(self.payload)

@@ -69,6 +69,11 @@ class Dm(BaseMessage):
     msg = msg_format.serialize_message(self.payload)
     socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
 
+  def info(self, verbose: bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return f"{self.from_user}: {self.content}"
+
   @classmethod
   def receive(cls, raw: str) -> "Dm":
     received = cls.parse(msg_format.deserialize_message(raw))

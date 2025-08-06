@@ -24,14 +24,14 @@ def format_prompt(lines: list):
 
 def get_message_type(message_registry: dict):
   prompt = []
+  prompt.append("Select an action:")
+  for i, (key, _) in enumerate(message_registry.items(), start=1):
+    prompt.append(f"{i}. {key}")
+  prompt.append(f"{i + 1}. Show Client Info")
+  prompt.append(f"{i + 2}. Show Recent Messages")
+  prompt.append(f"{i + 3}. Clear Screen")
+  prompt.append(f"{i + 4}. Exit")
   while True:
-    prompt.append("Select an action:")
-    for i, (key, _) in enumerate(message_registry.items(), start=1):
-      prompt.append(f"{i}. {key}")
-    prompt.append(f"{i + 1}. Show Client Info")
-    prompt.append(f"{i + 2}. Show Recent Messages")
-    prompt.append(f"{i + 3}. Clear Screen")
-    prompt.append(f"{i + 4}. Exit")
     client_logger.info(format_prompt(prompt))
     choice = client_logger.input("Enter your action number: ").strip()
     if choice.isdigit():
@@ -54,16 +54,50 @@ def get_message_type(message_registry: dict):
     else:
       client_logger.error("Invalid input. Please enter a number.")
 
+def display_help(message_registry: dict):
+  help_prompt = []
+  help_prompt.append("Available Message Types:")
+  for value in message_registry.keys():
+    help_prompt.append(value)
+
+  help_prompt.append("info: shows client details")
+  help_prompt.append("recent: shows received messages")
+  help_prompt.append("cls: clears the screen")
+  help_prompt.append("help: shows available commands")
+  help_prompt.append("exit: exits the program")
+  client_logger.info(format_prompt(help_prompt))
+
+def get_command(message_registry: dict):
+  valid_commands = message_registry.keys
+  while True:
+    command = input().upper()
+    if command in valid_commands():
+      return command
+    elif command == "HELP":
+      display_help(message_registry)
+    elif command == "CLS":
+      clear_screen()
+    elif command == "INFO":
+      show_client_details()
+    elif command == "RECENT":
+      show_recent_messages()
+    elif command == "EXIT":
+      return None
+    
+
 def print_message(msg_obj: BaseMessage):
   """
   Prints the message's payload in a readable format.
   """
-  for field, value in msg_obj.payload.items():
-    client_logger.info(f"{field}: {value}")
+  msg_info = msg_obj.info(config.VERBOSE)
+  if msg_info != "":
+    client_logger.info(msg_obj.info())
 
 def show_recent_messages(recent_messages: list):
   for message in recent_messages:
-    print_message(message)
+    msg_info = message.info(config.VERBOSE)
+    if msg_info != "":
+      client_logger.info(msg_info)
 
 def show_client_details():
   client_logger.info(f"UserID: \"{client_state.get_user_id()}\"!")

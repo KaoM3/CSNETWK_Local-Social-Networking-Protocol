@@ -80,6 +80,12 @@ class Post(BaseMessage):
     if received.user_id not in following:
       raise ValueError(f"{received.user_id} is not followed by this client")
     return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return f"{self.user_id}: {self.content}"
+
 
 
 __message__ = Post

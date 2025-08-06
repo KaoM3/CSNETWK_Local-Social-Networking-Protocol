@@ -78,5 +78,10 @@ class Follow(BaseMessage):
       raise ValueError("Message is not intended to be received by this client")
     client_state.add_follower(received.from_user)
     return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return f"User {self.from_user} has followed you"
 
 __message__ = Follow

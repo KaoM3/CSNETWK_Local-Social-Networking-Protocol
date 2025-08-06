@@ -2,6 +2,7 @@ import config
 import socket
 import importlib
 import pkgutil
+import traceback
 import utils.msg_format as msg_format
 from typing import Type
 from custom_types.base_message import BaseMessage
@@ -39,8 +40,8 @@ def load_messages(dir: str):
 
       MESSAGE_REGISTRY[msg_type] = msg_class
       client_logger.success(f"REGISTERED: [{module_name}]")  
-    except Exception as err:
-      client_logger.error(f"{err}")
+    except Exception:
+      client_logger.error("ERROR: (load_messages)" + traceback.format_exc())
 
 def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: int):
   try:
@@ -48,8 +49,8 @@ def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: in
     message_obj = message_class(**data)
     message_obj.send(socket, ip, port, config.ENCODING)
     client_logger.send(f"SENT: {message_obj.payload} TO ({ip}, {port})")
-  except Exception as e:
-    client_logger.error(e)
+  except Exception:
+    client_logger.error("ERROR: (send_message)" + traceback.format_exc())
 
 def recv_message(raw: bytes, address) -> BaseMessage:
   try:
@@ -63,7 +64,6 @@ def recv_message(raw: bytes, address) -> BaseMessage:
     return message_obj
   except Exception as err:
     client_logger.drop({raw.decode(config.ENCODING, errors="ignore")})
-    client_logger.error({err})
 
 def get_module(module_name: str):
   """

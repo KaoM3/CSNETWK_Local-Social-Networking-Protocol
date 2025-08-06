@@ -80,5 +80,11 @@ class Unfollow(BaseMessage):
       raise ValueError("Message is not intended to be received by this client")
     client_state.remove_follower(received.from_user)
     return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return f"User {self.from_user} has unfollowed you"
+
 
 __message__ = Unfollow

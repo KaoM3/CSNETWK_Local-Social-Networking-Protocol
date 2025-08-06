@@ -43,7 +43,7 @@ def get_message_type(message_registry: dict):
       elif choice_num == len(message_registry) + 1:
         show_client_details()
       elif choice_num == len(message_registry) + 2:
-        show_recent_messages(client_state.get_recent_messages())
+        show_recent_messages()
       elif choice_num == len(message_registry) + 3:
         clear_screen()
       elif choice_num == len(message_registry) + 4:
@@ -56,15 +56,18 @@ def get_message_type(message_registry: dict):
 
 def display_help(message_registry: dict):
   help_prompt = []
-  help_prompt.append("Available Message Types:")
+  help_prompt.append("Available Commands:")
   for value in message_registry.keys():
-    help_prompt.append(value)
+    if len(value) < 7:
+      help_prompt.append(f"{value.lower()}:\t\tsend a new {value} message")
+    else:
+      help_prompt.append(f"{value.lower()}:\tsend a new {value} message")
 
-  help_prompt.append("info: shows client details")
-  help_prompt.append("recent: shows received messages")
-  help_prompt.append("cls: clears the screen")
-  help_prompt.append("help: shows available commands")
-  help_prompt.append("exit: exits the program")
+  help_prompt.append("info:\t\tshows client details")
+  help_prompt.append("recent:\t\tshows received messages")
+  help_prompt.append("cls:\t\tclears the screen")
+  help_prompt.append("help:\t\tshows available commands")
+  help_prompt.append("exit:\t\texits the program")
   client_logger.info(format_prompt(help_prompt))
 
 def get_command(message_registry: dict):
@@ -93,8 +96,8 @@ def print_message(msg_obj: BaseMessage):
   if msg_info != "":
     client_logger.info(msg_obj.info())
 
-def show_recent_messages(recent_messages: list):
-  for message in recent_messages:
+def show_recent_messages():
+  for message in client_state.get_recent_messages():
     msg_info = message.info(config.VERBOSE)
     if msg_info != "":
       client_logger.info(msg_info)

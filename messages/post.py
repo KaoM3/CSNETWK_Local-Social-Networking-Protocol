@@ -60,9 +60,7 @@ class Post(BaseMessage):
     return new_obj
 
   def send(self, sock: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
-    """
-    Sends the POST message to all followers using a provided socket.
-    """
+    """Sends the POST message to all followers using a provided socket."""
     msg = msg_format.serialize_message(self.payload)
 
     for follower in client_state.get_followers():

@@ -92,9 +92,10 @@ def print_message(msg_obj: BaseMessage):
   """
   Prints the message's payload in a readable format.
   """
+  print(config.VERBOSE)
   msg_info = msg_obj.info(config.VERBOSE)
   if msg_info != "":
-    client_logger.info(msg_obj.info())
+    client_logger.info(msg_info)
 
 def show_recent_messages():
   for message in client_state.get_recent_messages():

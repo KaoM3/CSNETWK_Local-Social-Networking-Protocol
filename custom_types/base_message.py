@@ -22,7 +22,7 @@ class BaseMessage(ABC):
     """Parses structured data into a message instance"""
     raise NotImplementedError
 
-  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
     """Sends this message using the provided socket"""
     msg = msg_format.serialize_message(self.payload)
     socket.sendto(msg.encode(encoding), (ip, port))

@@ -65,14 +65,10 @@ class Dm(BaseMessage):
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
   
-  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
-    msg = msg_format.serialize_message(self.payload)
-    socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
-
-  def info(self, verbose: bool = False) -> str:
-    if verbose:
-      return f"{self.payload}"
-    return f"{self.from_user}: {self.content}"
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+    if ip == "default":
+      ip = self.to_user.get_ip()
+    super().send(socket, ip, port, encoding)
 
   @classmethod
   def receive(cls, raw: str) -> "Dm":
@@ -80,5 +76,10 @@ class Dm(BaseMessage):
     if received.to_user != client_state.get_user_id():
       raise ValueError("Message is not intended to be received by this client")
     return received
+  
+  def info(self, verbose: bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return f"{self.from_user}: {self.content}"
 
 __message__ = Dm

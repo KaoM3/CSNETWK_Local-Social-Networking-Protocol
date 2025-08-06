@@ -48,7 +48,7 @@ def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: in
     message_class = MESSAGE_REGISTRY.get(type)
     message_obj = message_class(**data)
     message_obj.send(socket, ip, port, config.ENCODING)
-    client_logger.send(f"SENT: {message_obj.payload} TO ({ip}, {port})")
+    client_logger.send(f"MESSAGE: {message_obj.payload} TO ({ip}, {port})")
   except Exception:
     client_logger.error("ERROR: (send_message)" + traceback.format_exc())
 
@@ -59,11 +59,11 @@ def recv_message(raw: bytes, address) -> BaseMessage:
 
     message_obj = MESSAGE_REGISTRY[msg_type].receive(msg_str)
 
-    client_logger.receive(f"RECEIVED: {message_obj} FROM {address}")
-    client_logger.receive(f"MESSAGE: {message_obj.payload}")
+    client_logger.receive(f"MESSAGE: {message_obj.payload} FROM {address}")
     return message_obj
   except Exception as err:
     client_logger.drop({raw.decode(config.ENCODING, errors="ignore")})
+    client_logger.drop({err})
 
 def get_module(module_name: str):
   """

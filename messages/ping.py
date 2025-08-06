@@ -3,6 +3,7 @@ from utils import msg_format
 from custom_types.base_message import BaseMessage
 import socket
 from states.client_state import client_state
+import config
 
 class Ping(BaseMessage):
   TYPE = "PING"
@@ -32,6 +33,11 @@ class Ping(BaseMessage):
     msg_format.validate_message(new_instance.payload, cls.__schema__)
     return new_instance
         
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+    if ip == "default":
+      ip = config.BROADCAST_IP
+    super().send(socket, ip, port, encoding)
+
   @classmethod
   def receive(cls, raw: str) -> "Ping":
     received = cls.parse(msg_format.deserialize_message(raw))
@@ -42,9 +48,5 @@ class Ping(BaseMessage):
     if verbose:
       return f"{self.payload}"
     return ""
-
-  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
-    msg = msg_format.serialize_message(self.payload)
-    socket.sendto(msg.encode(encoding), (ip, port))
 
 __message__ = Ping

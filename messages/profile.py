@@ -2,6 +2,8 @@ from utils import msg_format
 from states.client_state import client_state
 from custom_types.user_id import UserID
 from custom_types.base_message import BaseMessage
+import socket
+import config
 
 class Profile(BaseMessage):
   TYPE = "PROFILE"
@@ -28,6 +30,11 @@ class Profile(BaseMessage):
     self.display_name = display_name
     self.status = status
     msg_format.validate_message(self.payload, self.__schema__)
+
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+    if ip == "default":
+      ip = config.BROADCAST_IP
+    super().send(socket, ip, port, encoding)
 
   @classmethod
   def parse(cls, data: str) -> "Profile":

@@ -44,12 +44,6 @@ class Unfollow(BaseMessage):
     self.message_id = msg_format.generate_message_id()
     self.token = Token(self.from_user, unix_now + ttl, self.SCOPE)
 
-  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
-    """Send unfollow request and update local following list"""
-    msg = msg_format.serialize_message(self.payload)
-    socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
-    client_state.remove_following(self.to_user)
-
   @classmethod
   def parse(cls, data: dict) -> "Unfollow":
     new_obj = cls.__new__(cls)
@@ -71,6 +65,13 @@ class Unfollow(BaseMessage):
     
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
+
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+    """Send unfollow request and update local following list"""
+    if ip == "default":
+      ip = self.to_user.get_ip()
+    super().send(socket, ip, port, encoding)
+    client_state.remove_following(self.to_user)
 
   @classmethod
   def receive(cls, raw: str) -> "Unfollow":

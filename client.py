@@ -57,6 +57,12 @@ def run_threads():
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
+  def cleanup_expired_messages():
+    while True:
+      client_state.cleanup_expired_messages()
+      time.sleep(5)
+  threading.Thread(target=cleanup_expired_messages, daemon=True).start()
+
 def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()

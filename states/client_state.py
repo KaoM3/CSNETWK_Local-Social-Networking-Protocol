@@ -2,6 +2,7 @@ import threading
 from custom_types.user_id import UserID
 from custom_types.base_message import BaseMessage
 from client_logger import client_logger
+import time
 
 class ClientState:
   _instance = None
@@ -30,6 +31,18 @@ class ClientState:
   def _validate_base_message(self, data):
     if not isinstance(data, BaseMessage):
       raise ValueError(f"ERROR: {data} is not of type BaseMessage")
+    
+  def cleanup_expired_messages(self):
+    with self._lock:
+      now = int(time.time())
+      valid_messages = []
+      for msg in self._recent_messages:
+        token = getattr(msg, "token", None)
+        if token is None or token.valid_until > now:
+          valid_messages.append(msg)
+        else:
+          client_logger.debug(f"EXPIRED: {msg}")
+      self._recent_messages = valid_messages
 
   def get_user_id(self):
     with self._lock:
@@ -101,6 +114,7 @@ class ClientState:
       self._recent_messages.append(message)
 
   def get_recent_messages(self) -> list:
+    self.cleanup_expired_messages()
     with self._lock:
       return self._recent_messages
 

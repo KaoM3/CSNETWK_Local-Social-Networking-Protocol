@@ -32,10 +32,6 @@ def run_threads():
   def unicast_receive_loop():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(1024)
-      print(address[0])
-      print(config.BROADCAST_IP)
-      if address[0] == config.BROADCAST_IP:
-        continue
       client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
@@ -92,10 +88,12 @@ def main():
   
   # Main Program Loop
   while True:
-    client_logger.info(f"WELCOME \"{client_state.get_user_id()}\"!")
-    client_logger.info(f"Using port: {config.PORT}")
-    client_logger.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
-    client_logger.info(f"Broadcast IP: {config.BROADCAST_IP}")
+    user_details = []
+    user_details.append(f"WELCOME \"{client_state.get_user_id()}\"!")
+    user_details.append(f"Using port: {config.PORT}")
+    user_details.append(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+    user_details.append(f"Broadcast IP: {config.BROADCAST_IP}")
+    client_logger.info(interface.format_prompt(user_details))
     user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
       try:

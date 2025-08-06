@@ -7,6 +7,7 @@ class Color:
     INFO = "\033[96m"  # Cyan
     WARN = "\033[93m"  # Yellow
     RECV = "\033[94m"  # Blue
+    PROMPT = "\033[95m"  # Magenta
     RESET = "\033[0m"
 
 class ClientLogger:
@@ -36,53 +37,62 @@ class ClientLogger:
         with self._log_lock:
             self._verbose_mode = verbose
 
-    def print_log(self, message: str, color: Color, non_verbose=False):
+    def _print_divider(self, color:Color=Color.RESET):
+        width = 50
+        divider = "-" * width
+        print(f"{color}{divider}{Color.RESET}")
+        
+
+    def _print_log(self, message: str, color: Color, non_verbose=False):
         if self._verbose_mode or non_verbose:
             print(f"{color}{message}{Color.RESET}")
 
     def error(self, message: str):
         with self._log_lock:
             logging.error(message)
-            self.print_log(f"ERROR: {message}", Color.ERR, True)
+            self._print_log(f"ERROR: {message}", Color.ERR, True)
 
     def warn(self, message: str):
         with self._log_lock:
             logging.warning(message)
-            self.print_log(f"WARNING: {message}", Color.WARN, True)
+            self._print_log(f"WARNING: {message}", Color.WARN, True)
 
     def success(self, message: str):
         with self._log_lock:
             logging.info(message)
-            self.print_log(f"{message}", Color.OK, True)
+            self._print_log(f"{message}", Color.OK, True)
 
     def info(self, message: str):
         with self._log_lock:
             logging.info(message)
-            self.print_log(f"{message}", Color.INFO, True)
+            self._print_divider()
+            self._print_log(f"{message}", Color.INFO, True)
 
     def debug(self, message: str):
         with self._log_lock:
             logging.debug(message)
-            self.print_log(f"{message}", Color.INFO)
+            self._print_log(f"{message}", Color.INFO)
 
     def send(self, message: str):
         with self._log_lock:
             logging.debug(f"SEND > {message}")
-            self.print_log(f"SEND > {message}", Color.OK)
+            self._print_log(f"SEND > {message}", Color.OK)
 
     def receive(self, message: str):
         with self._log_lock:
             logging.debug(f"RECV < {message}")
-            self.print_log(f"RECV < {message}", Color.RECV)
+            self._print_log(f"RECV < {message}", Color.RECV)
 
     def drop(self, message: str):
         with self._log_lock:
             logging.debug(f"DROP ! {message}")
-            self.print_log(f"DROP ! {message}", Color.ERR)
+            self._print_log(f"DROP ! {message}", Color.ERR)
 
     def input(self, prompt: str) -> str:
         with self._log_lock:
-            user_input = input(f"{prompt}")
+            self._print_divider()
+            user_input = input(f"{Color.PROMPT}{prompt}{Color.RESET}")
+            logging.info(f"INPUT: {user_input}")
             return user_input
 
 # Global singleton instance

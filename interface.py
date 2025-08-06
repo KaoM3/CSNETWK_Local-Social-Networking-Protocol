@@ -17,15 +17,15 @@ def clear_screen():
   os.system('cls' if os.name == 'nt' else 'clear')
 
 def format_prompt(lines: list):
-  result = ""
+  result = "\n"
   for line in lines:
-    result += f"\n{line}"
-  return result
+    result += f"{line}\n"
+  return result + "\n"
 
 def get_message_type(message_registry: dict):
   prompt = []
   while True:
-    prompt.append("\nSelect an action:")
+    prompt.append("Select an action:")
     for i, (key, _) in enumerate(message_registry.items(), start=1):
       prompt.append(f"{i}. {key}")
     prompt.append(f"{i + 1}. Show Client Info")
@@ -38,7 +38,7 @@ def get_message_type(message_registry: dict):
       choice_num = int(choice)
       if 1 <= choice_num <= len(message_registry):
         selected_key = list(message_registry.keys())[choice_num - 1]
-        client_logger.info(f"\nYou selected: {selected_key}")
+        client_logger.info(f"You selected: {selected_key}")
         return selected_key
       elif choice_num == len(message_registry) + 1:
         show_client_details()
@@ -82,7 +82,11 @@ def get_func_args(func_signature: inspect.Signature) -> dict:
       continue
 
     while True:
-      user_input = client_logger.input(f"{name}: ").strip()
+      if param.default != inspect._empty:
+        input_prompt = f"{name} (default={param.default})"
+      else:
+        input_prompt = name
+      user_input = client_logger.input(f"{input_prompt}: ").strip()
       while not user_input:
         if param.default != inspect._empty:
           user_input = param.default

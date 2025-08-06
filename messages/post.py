@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from client_logger import client_logger
 import socket
 
 class Post(BaseMessage):
@@ -68,9 +69,9 @@ class Post(BaseMessage):
       try:
         follower_ip = follower.get_ip()
         sock.sendto(msg.encode(encoding), (follower_ip, port))
-        print(f"Sent to {follower_ip}:{port}")
+        client_logger.debug(f"Sent to {follower_ip}:{port}")
       except Exception as e:
-        print(f"Error sending to {follower}: {e}")
+        client_logger.error(f"Error sending to {follower}: {e}")
 
   @classmethod
   def receive(cls, raw: str) -> "Post":

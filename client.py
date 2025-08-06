@@ -39,7 +39,6 @@ def run_threads():
       client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
-        interface.print_message(received_msg)
         client_state.add_recent_message(received_msg)
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
   
@@ -49,7 +48,6 @@ def run_threads():
       client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
-        interface.print_message(received_msg)
         client_state.add_recent_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
@@ -104,7 +102,7 @@ def main():
         msg = router.MESSAGE_REGISTRY.get(user_input)
         msg_constructor_args = inspect.signature(msg.__init__)
         new_msg = interface.get_func_args(msg_constructor_args)
-        ip_input = input("Enter dest ip: ")
+        ip_input = client_logger.input("Enter dest ip: ")
         router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
       except Exception as e:
         client_logger.error("An error occurred:\n" + traceback.format_exc())

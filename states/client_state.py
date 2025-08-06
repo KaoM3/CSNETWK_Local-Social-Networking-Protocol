@@ -16,6 +16,7 @@ class ClientState:
     return cls._instance
 
   def _initialize(self):
+    self._lock = threading.RLock()
     self._user_id = None
     self._peers = []
     self._followers = []

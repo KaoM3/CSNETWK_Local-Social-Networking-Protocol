@@ -16,21 +16,29 @@ type_parsers = {
 def clear_screen():
   os.system('cls' if os.name == 'nt' else 'clear')
 
+def format_prompt(lines: list):
+  result = ""
+  for line in lines:
+    result += f"\n{line}"
+  return result
+
 def get_message_type(message_registry: dict):
+  prompt = []
   while True:
-    print("\nSelect an action:")
+    prompt.append("\nSelect an action:")
     for i, (key, _) in enumerate(message_registry.items(), start=1):
-      print(f"{i}. {key}")
-    print(f"{i + 1}. Show Client Info")
-    print(f"{i + 2}. Show Recent Messages")
-    print(f"{i + 3}. Clear Screen")
-    print(f"{i + 4}. Exit")
-    choice = input("Enter your action number: ").strip()
+      prompt.append(f"{i}. {key}")
+    prompt.append(f"{i + 1}. Show Client Info")
+    prompt.append(f"{i + 2}. Show Recent Messages")
+    prompt.append(f"{i + 3}. Clear Screen")
+    prompt.append(f"{i + 4}. Exit")
+    client_logger.info(format_prompt(prompt))
+    choice = client_logger.input("Enter your action number: ").strip()
     if choice.isdigit():
       choice_num = int(choice)
       if 1 <= choice_num <= len(message_registry):
         selected_key = list(message_registry.keys())[choice_num - 1]
-        print(f"\nYou selected: {selected_key}")
+        client_logger.info(f"\nYou selected: {selected_key}")
         return selected_key
       elif choice_num == len(message_registry) + 1:
         show_client_details()
@@ -39,19 +47,19 @@ def get_message_type(message_registry: dict):
       elif choice_num == len(message_registry) + 3:
         clear_screen()
       elif choice_num == len(message_registry) + 4:
-        print("Exiting. Goodbye!")
+        client_logger.info("Exiting. Goodbye!")
         return None
       else:
-        print("Invalid choice. Please enter a valid number.")
+        client_logger.error("Invalid choice. Please enter a valid number.")
     else:
-      print("Invalid input. Please enter a number.")
+      client_logger.error("Invalid input. Please enter a number.")
 
 def print_message(msg_obj: BaseMessage):
   """
   Prints the message's payload in a readable format.
   """
   for field, value in msg_obj.payload.items():
-    client_logger.debug(f"{field}: {value}")
+    client_logger.info(f"{field}: {value}")
 
 def show_recent_messages(recent_messages: list):
   for message in recent_messages:
@@ -74,12 +82,12 @@ def get_func_args(func_signature: inspect.Signature) -> dict:
       continue
 
     while True:
-      user_input = input(f"{name}: ").strip()
+      user_input = client_logger.input(f"{name}: ").strip()
       while not user_input:
         if param.default != inspect._empty:
           user_input = param.default
         else:
-          user_input = input(f"{name} cannot be empty. Try again: ").strip()
+          user_input = client_logger.input(f"{name} cannot be empty. Try again: ").strip()
       
       parser = type_parsers.get(param.annotation)
       if parser:
@@ -96,8 +104,8 @@ def get_func_args(func_signature: inspect.Signature) -> dict:
 
 
 def get_user_id() -> str:
-  username = input("Enter username: ")
+  username = client_logger.input("Enter username: ")
   while not username:
-    username = input("Username cannot be empty")
+    username = client_logger.input("Username cannot be empty")
   user_id = f"{username}@{config.CLIENT_IP}"
   return user_id

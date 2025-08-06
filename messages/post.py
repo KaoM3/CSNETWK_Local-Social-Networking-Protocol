@@ -19,6 +19,7 @@ class Post(BaseMessage):
     "TYPE": TYPE,
     "USER_ID": {"type": UserID, "required": True},
     "CONTENT": {"type": str, "required": True},
+    "TTL": {"type": int, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
     "TOKEN": {"type": Token, "required": True},
   }
@@ -39,8 +40,8 @@ class Post(BaseMessage):
     self.user_id = client_state.get_user_id()
     self.content = content
     self.message_id = msg_format.generate_message_id()
-    ttl = msg_format.sanitize_ttl(ttl)
-    self.token = Token(self.user_id, unix_now + ttl, self.SCOPE)
+    self.ttl = msg_format.sanitize_ttl(ttl)
+    self.token = Token(self.user_id, unix_now + self.ttl, self.SCOPE)
 
   @classmethod
   def parse(cls, data: dict) -> "Post":

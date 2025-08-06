@@ -93,6 +93,24 @@ def sanitize_ttl(ttl: int):
     ttl = config.DEFAULT_TTL
   return ttl
 
+def sanitize_position(position: int):
+  try:
+    position = int(position)
+    if position < 0 or position > 8:
+      raise ValueError()
+  except (ValueError, TypeError):
+      raise ValueError("Position must be an integer between 0 and 8")
+  return position
+
+def sanitize_turn(turn: int):
+  try:
+    ttl = int(ttl)
+    if ttl <= 0:
+      raise ValueError()
+  except (ValueError, TypeError):
+    raise ValueError("Position must be an integer above 0")
+  return turn
+
 def isTokenExpired(token: Token) -> bool:
   if token.valid_until > datetime.now().timestamp():
     return False

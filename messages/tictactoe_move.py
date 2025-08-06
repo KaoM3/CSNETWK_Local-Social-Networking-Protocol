@@ -83,9 +83,9 @@ class TicTacToeMove(BaseMessage):
         self.from_user = client_state.get_user_id()
         self.to_user = to
         self.game_id = str(gameid)
-        self.position = position
+        self.position = msg_format.sanitize_position(position)
         self.symbol = symbol
-        self.turn = turn
+        self.turn = msg_format.sanitize_position(turn)
         self.message_id = msg_format.generate_message_id()
         self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
 
@@ -95,11 +95,14 @@ class TicTacToeMove(BaseMessage):
         new_obj.type = data["TYPE"] 
         new_obj.from_user = UserID.parse(data["FROM"])
         new_obj.to_user = UserID.parse(data["TO"])
+
         new_obj.game_id = data["GAMEID"]
         #for future add a way to check if game_id is valid
-        new_obj.position = data["POSITION"]
+        
+        new_obj.position = msg_format.sanitize_position(data["POSITION"])
+
         new_obj.symbol = data["SYMBOL"]
-        new_obj.turn = data["TURN"]
+        new_obj.turn = msg_format.sanitize_position(data["TURN"])
 
         message_id = data["MESSAGE_ID"]
         msg_format.validate_message_id(message_id)
@@ -109,19 +112,8 @@ class TicTacToeMove(BaseMessage):
         msg_format.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
 
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
+        return new_obj
 
-    def _init_from_dict(self, data: dict):
-        self.type = data["TYPE"]
-        self.from_user = UserID.parse(data["FROM"])
-        self.to_user = UserID.parse(data["TO"])
-        self.game_id = str(data["GAMEID"])
-        self.position = int(data["POSITION"])
-        self.symbol = str(data["SYMBOL"])
-        self.turn = int(data["TURN"])
-        self.message_id = data["MESSAGE_ID"]
-        self.token = Token.parse(data["TOKEN"])
-        msg_format.validate_message(self.payload, self.__schema__)
-        return self
 
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Sends game move to other player and updates game state"""

@@ -81,7 +81,7 @@ class TicTacToeResult(BaseMessage):
         self.result = result
         self.symbol = symbol
         self.winning_line = winning_line
-        self.turn = int(turn)
+        self.turn = msg_format.sanitize_position(turn)
         self.message_id = msg_format.generate_message_id()
         self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
 
@@ -95,7 +95,7 @@ class TicTacToeResult(BaseMessage):
         new_obj.result = data["RESULT"]
         new_obj.symbol = data["SYMBOL"]
         new_obj.winning_line = data["WINNING_LINE"]
-        new_obj.turn = data["TURN"]
+        new_obj.turn = msg_format.sanitize_position(data["TURN"])
 
         message_id = data["MESSAGE_ID"]
         msg_format.validate_message_id(message_id)

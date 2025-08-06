@@ -1,13 +1,11 @@
 import socket
 import sys
-import log
 from messages import dm as dm
 
 def main():
   if len(sys.argv) < 4:
     print("Usage: python send_dm.py <from_user> <to_user> <message>")
     sys.exit(1)
-  log.setup_logging(True)
 
   from_user = sys.argv[1]
   to_user = sys.argv[2]

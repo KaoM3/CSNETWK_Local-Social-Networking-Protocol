@@ -1,11 +1,11 @@
 import os
 import config
-import log
 import inspect
 from custom_types.user_id import UserID
 from custom_types.token import Token
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from client_logger import client_logger
 
 type_parsers = {
   UserID: UserID.parse,
@@ -51,20 +51,20 @@ def print_message(msg_obj: BaseMessage):
   Prints the message's payload in a readable format.
   """
   for field, value in msg_obj.payload.items():
-    log.debug(f"{field}: {value}")
+    client_logger.debug(f"{field}: {value}")
 
 def show_recent_messages(recent_messages: list):
   for message in recent_messages:
     print_message(message)
 
 def show_client_details():
-  log.info(f"UserID: \"{client_state.get_user_id()}\"!")
-  log.info(f"Using port: {config.PORT}")
-  log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
-  log.info(f"Broadcast IP: {config.BROADCAST_IP}")
-  log.info(f"Peers: {client_state.get_peers()}")
-  log.info(f"Followers: {client_state.get_followers()}")
-  log.info(f"Following: {client_state.get_following()}")
+  client_logger.info(f"UserID: \"{client_state.get_user_id()}\"!")
+  client_logger.info(f"Using port: {config.PORT}")
+  client_logger.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+  client_logger.info(f"Broadcast IP: {config.BROADCAST_IP}")
+  client_logger.info(f"Peers: {client_state.get_peers()}")
+  client_logger.info(f"Followers: {client_state.get_followers()}")
+  client_logger.info(f"Following: {client_state.get_following()}")
 
 def get_func_args(func_signature: inspect.Signature) -> dict:
   new_msg_args = {}
@@ -87,7 +87,7 @@ def get_func_args(func_signature: inspect.Signature) -> dict:
           new_msg_args[name] = parser(user_input)
           break
         except Exception as e:
-          log.warn(f"{e}")
+          client_logger.warn(f"{e}")
       else:
         new_msg_args[name] = user_input
         break
@@ -97,5 +97,7 @@ def get_func_args(func_signature: inspect.Signature) -> dict:
 
 def get_user_id() -> str:
   username = input("Enter username: ")
+  while not username:
+    username = input("Username cannot be empty")
   user_id = f"{username}@{config.CLIENT_IP}"
   return user_id

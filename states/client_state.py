@@ -1,7 +1,7 @@
 import threading
-import log
 from custom_types.user_id import UserID
 from custom_types.base_message import BaseMessage
+from client_logger import client_logger
 
 class ClientState:
   _instance = None
@@ -12,16 +12,15 @@ class ClientState:
       with cls._lock:
         if cls._instance is None:
           cls._instance = super().__new__(cls)
-          cls._instance._init()
+          cls._instance._initialize()
     return cls._instance
 
-  def _init(self):
+  def _initialize(self):
     self._user_id = None
     self._peers = []
     self._followers = []
     self._following = []
     self._recent_messages = []
-    self._lock = threading.Lock()
 
   def _validate_user_id(self, data):
     if not isinstance(data, UserID):
@@ -39,53 +38,53 @@ class ClientState:
   def set_user_id(self, new_user_id: UserID):
     with self._lock:
       self._user_id = UserID.parse(new_user_id)
-      log.info(f"Set user_id: {self._user_id}")
+      client_logger.debug(f"Set user_id: {self._user_id}")
 
   def add_peer(self, peer: UserID):
     with self._lock:
       self._validate_user_id(peer)
       if peer not in self._peers:
         self._peers.append(peer)
-        log.info(f"Added peer: {peer}")
+        client_logger.debug(f"Added peer: {peer}")
 
   def remove_peer(self, peer: UserID):
     with self._lock:
       self._validate_user_id(peer)
       if peer in self._peers:
         self._peers.remove(peer)
-        log.info(f"Removed peer: {peer}")
+        client_logger.debug(f"Removed peer: {peer}")
 
   def add_follower(self, follower: UserID):
     with self._lock:
       self._validate_user_id(follower)
       if follower == self._user_id:
-        log.warn("Received FOLLOW from self; ignoring.")
+        client_logger.debug("Received FOLLOW from self; ignoring.")
       elif follower not in self._followers:
         self._followers.append(follower)
-        log.info(f"Added follower: {follower}")
+        client_logger.debug(f"Added follower: {follower}")
 
   def remove_follower(self, follower: UserID):
     with self._lock:
       self._validate_user_id(follower)
       if follower in self._followers:
         self._followers.remove(follower)
-        log.info(f"Removed follower: {follower}")
+        client_logger.debug(f"Removed follower: {follower}")
 
   def add_following(self, target: UserID):
     with self._lock:
       self._validate_user_id(target)
       if target == self._user_id:
-        log.warn("Received FOLLOW from self; ignoring.")
+        client_logger.debug("Received FOLLOW from self; ignoring.")
       elif target not in self._following:
         self._following.append(target)
-        log.info(f"Added following: {target}")
+        client_logger.debug(f"Added following: {target}")
 
   def remove_following(self, target: UserID):
     with self._lock:
       self._validate_user_id(target)
       if target in self._following:
         self._following.remove(target)
-        log.info(f"Removed following: {target}")
+        client_logger.debug(f"Removed following: {target}")
 
   def get_peers(self) -> list[UserID]:
     with self._lock:

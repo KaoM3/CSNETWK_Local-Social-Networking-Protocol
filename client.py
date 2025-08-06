@@ -2,14 +2,13 @@ import socket
 import config
 import threading
 import argparse
-import log
 import time
 import router
 import inspect
 import interface
 import traceback
 from states.client_state import client_state
-from custom_types.user_id import UserID
+from client_logger import client_logger
 
 UNICAST_SOCKET = None
 BROADCAST_SOCKET = None
@@ -33,7 +32,11 @@ def run_threads():
   def unicast_receive_loop():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(1024)
-      log.info("UNICAST RECEIVED")
+      print(address[0])
+      print(config.BROADCAST_IP)
+      if address[0] == config.BROADCAST_IP:
+        continue
+      client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         interface.print_message(received_msg)
@@ -43,7 +46,7 @@ def run_threads():
   def broadcast_receive_loop():
     while True:
       data, address = BROADCAST_SOCKET.recvfrom(1024)
-      log.info("BROADCAST RECEIVED")
+      client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         interface.print_message(received_msg)
@@ -75,7 +78,7 @@ def main():
     config.VERBOSE = args.verbose
 
   # Setup logging with verbose flag
-  log.setup_logging(config.VERBOSE)
+  client_logger.set_verbose(config.VERBOSE)
 
   # Socket initialization
   initialize_sockets(config.PORT)
@@ -91,21 +94,20 @@ def main():
   
   # Main Program Loop
   while True:
-    log.info(f"WELCOME \"{client_state.get_user_id()}\"!")
-    log.info(f"Using port: {config.PORT}")
-    log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
-    log.info(f"Broadcast IP: {config.BROADCAST_IP}")
+    client_logger.info(f"WELCOME \"{client_state.get_user_id()}\"!")
+    client_logger.info(f"Using port: {config.PORT}")
+    client_logger.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+    client_logger.info(f"Broadcast IP: {config.BROADCAST_IP}")
     user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
       try:
         msg = router.MESSAGE_REGISTRY.get(user_input)
-        #new_msg = interface.create_message(msg.__schema__)
         msg_constructor_args = inspect.signature(msg.__init__)
         new_msg = interface.get_func_args(msg_constructor_args)
         ip_input = input("Enter dest ip: ")
         router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
       except Exception as e:
-        log.error("An error occurred:\n" + traceback.format_exc())
+        client_logger.error("An error occurred:\n" + traceback.format_exc())
     elif user_input is None:
       break
 

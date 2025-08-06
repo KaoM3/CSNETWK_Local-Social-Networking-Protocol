@@ -2,10 +2,10 @@ import config
 import socket
 import importlib
 import pkgutil
-import log
 import utils.msg_format as msg_format
 from typing import Type
 from custom_types.base_message import BaseMessage
+from client_logger import client_logger
 
 MESSAGE_REGISTRY: dict[str, Type[BaseMessage]] = {}
 
@@ -17,34 +17,39 @@ def load_messages(dir: str):
   - dir: The subfolder under root containing the messages
   """
   module_dir = importlib.import_module(dir)
+  client_logger.info(f"Importing messages from {list(module_dir.__path__)}")
   for _, module_name, _ in pkgutil.iter_modules(module_dir.__path__):
     try:
       msg_module = importlib.import_module(f"{module_dir.__name__}.{module_name}")
       msg_class = getattr(msg_module, "__message__", None)
 
       if msg_class is None:
-        log.error(f"[{module_name}] Missing __message__")
+        client_logger.error(f"[{module_name}] Missing __message__")
         continue
 
       msg_schema = msg_class.__schema__
       if msg_schema is None:
-        log.error(f"[{module_name}] Missing __schema__")
+        client_logger.error(f"[{module_name}] Missing __schema__")
         continue
 
       msg_type = msg_schema.get("TYPE")
       if msg_type is None:
-        log.error(f"[{module_name}] Missing Field: TYPE")
+        client_logger.error(f"[{module_name}] Missing Field: TYPE")
         continue
 
       MESSAGE_REGISTRY[msg_type] = msg_class
-      log.success(f"REGISTERED: [{module_name}]")  
+      client_logger.success(f"REGISTERED: [{module_name}]")  
     except Exception as err:
-      log.error(f"{err}")
+      client_logger.error(f"{err}")
 
 def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: int):
-  message_class = MESSAGE_REGISTRY.get(type)
-  message_obj = message_class(**data)
-  message_obj.send(socket, ip, port, config.ENCODING)
+  try:
+    message_class = MESSAGE_REGISTRY.get(type)
+    message_obj = message_class(**data)
+    message_obj.send(socket, ip, port, config.ENCODING)
+    client_logger.send(f"SENT: {message_obj.payload} TO ({ip}, {port})")
+  except Exception as e:
+    client_logger.error(e)
 
 def recv_message(raw: bytes, address) -> BaseMessage:
   try:
@@ -53,12 +58,12 @@ def recv_message(raw: bytes, address) -> BaseMessage:
 
     message_obj = MESSAGE_REGISTRY[msg_type].receive(msg_str)
 
-    log.receive(f"RECEIVED: {message_obj} FROM {address}")
-    log.receive(f"MESSAGE: {message_obj.payload}")
+    client_logger.receive(f"RECEIVED: {message_obj} FROM {address}")
+    client_logger.receive(f"MESSAGE: {message_obj.payload}")
     return message_obj
   except Exception as err:
-    log.drop({raw.decode(config.ENCODING, errors="ignore")})
-    log.error({err})
+    client_logger.drop({raw.decode(config.ENCODING, errors="ignore")})
+    client_logger.error({err})
 
 def get_module(module_name: str):
   """

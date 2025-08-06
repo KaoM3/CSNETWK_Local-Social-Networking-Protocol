@@ -58,9 +58,7 @@ class ClientState:
   def add_follower(self, follower: UserID):
     with self._lock:
       self._validate_user_id(follower)
-      if follower == self._user_id:
-        client_logger.debug("Received FOLLOW from self; ignoring.")
-      elif follower not in self._followers:
+      if follower not in self._followers:
         self._followers.append(follower)
         client_logger.debug(f"Added follower: {follower}")
 
@@ -74,9 +72,7 @@ class ClientState:
   def add_following(self, target: UserID):
     with self._lock:
       self._validate_user_id(target)
-      if target == self._user_id:
-        client_logger.debug("Received FOLLOW from self; ignoring.")
-      elif target not in self._following:
+      if target not in self._following:
         self._following.append(target)
         client_logger.debug(f"Added following: {target}")
 

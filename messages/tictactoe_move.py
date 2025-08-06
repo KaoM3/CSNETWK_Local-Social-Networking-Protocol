@@ -8,7 +8,12 @@ from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from messages.ack import Ack
+from states.game import GameState
 import socket
+import config
+import client
+
 
 class TicTacToeMove(BaseMessage):
     """
@@ -128,6 +133,14 @@ class TicTacToeMove(BaseMessage):
         """Process received game move and update game state"""
         move_received = cls.parse(msg_format.deserialize_message(raw))   
         print(f"Received move: {move_received.from_user} at position {move_received.position}")
+
+        client.initialize_sockets(config.PORT)
+        ack = Ack(message_id=move_received.message_id)
+        ack.send(socket=client.get_broadcast_socket(), ip=move_received.from_user.get_ip(), port=config.PORT)
+
+        game = GameState()
+        game.print_board()
+        
         return move_received
 
 

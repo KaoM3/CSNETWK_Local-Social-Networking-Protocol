@@ -27,8 +27,22 @@ class GameState:
         """Prints the current game board."""
         print(self.get_board_string())
 
+    def move(self, position: int, symbol: str):
+        """Make a move on the board."""
+        if position < 0 or position > 8:
+            raise ValueError("Position must be between 0 and 8")
+        if self.board[position] != ' ':
+            raise ValueError("Position already taken")
+        if symbol not in ['X', 'O']:
+            raise ValueError("Symbol must be either 'X' or 'O'")
+        #???
+        self.board[position] = symbol
+        log.info(f"Player {symbol} moved to position {position}")
 
 
        
 
-
+if __name__ == "__main__":
+    game = GameState()
+    game.board[3] = 'X'
+    game.print_board()

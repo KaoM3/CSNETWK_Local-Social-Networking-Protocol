@@ -18,6 +18,8 @@ from messages.ack import Ack
 
 
 
+
+
 class TicTacToeInvite(BaseMessage):
     """
     Represents a TICTACTOE_INVITE message for initiating a game.
@@ -113,7 +115,7 @@ class TicTacToeInvite(BaseMessage):
         client.initialize_sockets(config.PORT)
         ack = Ack(message_id=received_invite.message_id)
         ack.send(socket=client.get_broadcast_socket(), ip=received_invite.from_user.get_ip(), port=config.PORT)
-        
+
 
         return received_invite
 

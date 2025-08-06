@@ -33,6 +33,13 @@ class BaseMessage(ABC):
     """Receives and parses a message of this type"""
     raise NotImplementedError
 
+  def info(self, verbose: bool = False) -> str:
+    """Returns this message's information as a string"""
+    if verbose:
+      return f"{self.payload}"
+    else:
+      return f"{self.__class__.__name__}"
+
   @property
   @abstractmethod
   def payload(self) -> dict:

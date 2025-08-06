@@ -1,11 +1,11 @@
 import os
 import config
-import keyword
 import log
 import inspect
 from custom_types.user_id import UserID
 from custom_types.token import Token
 from custom_types.base_message import BaseMessage
+from states.client_state import client_state
 
 type_parsers = {
   UserID: UserID.parse,
@@ -21,8 +21,10 @@ def get_message_type(message_registry: dict):
     print("\nSelect an action:")
     for i, (key, _) in enumerate(message_registry.items(), start=1):
       print(f"{i}. {key}")
-    print(f"{i + 1}. Exit")
-    print(f"{i + 2}. Clear Screen")
+    print(f"{i + 1}. Show Client Info")
+    print(f"{i + 2}. Show Recent Messages")
+    print(f"{i + 3}. Clear Screen")
+    print(f"{i + 4}. Exit")
     choice = input("Enter your action number: ").strip()
     if choice.isdigit():
       choice_num = int(choice)
@@ -31,10 +33,14 @@ def get_message_type(message_registry: dict):
         print(f"\nYou selected: {selected_key}")
         return selected_key
       elif choice_num == len(message_registry) + 1:
+        show_client_details()
+      elif choice_num == len(message_registry) + 2:
+        show_recent_messages(client_state.get_recent_messages())
+      elif choice_num == len(message_registry) + 3:
+        clear_screen()
+      elif choice_num == len(message_registry) + 4:
         print("Exiting. Goodbye!")
         return None
-      elif choice_num == len(message_registry) + 2:
-        clear_screen()
       else:
         print("Invalid choice. Please enter a valid number.")
     else:
@@ -47,6 +53,19 @@ def print_message(msg_obj: BaseMessage):
   for field, value in msg_obj.payload.items():
     log.debug(f"{field}: {value}")
 
+def show_recent_messages(recent_messages: list):
+  for message in recent_messages:
+    print_message(message)
+
+def show_client_details():
+  log.info(f"UserID: \"{client_state.get_user_id()}\"!")
+  log.info(f"Using port: {config.PORT}")
+  log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+  log.info(f"Broadcast IP: {config.BROADCAST_IP}")
+  log.info(f"Peers: {client_state.get_peers()}")
+  log.info(f"Followers: {client_state.get_followers()}")
+  log.info(f"Following: {client_state.get_following()}")
+
 def get_func_args(func_signature: inspect.Signature) -> dict:
   new_msg_args = {}
   
@@ -58,8 +77,9 @@ def get_func_args(func_signature: inspect.Signature) -> dict:
       user_input = input(f"{name}: ").strip()
       while not user_input:
         if param.default != inspect._empty:
+          user_input = param.default
+        else:
           user_input = input(f"{name} cannot be empty. Try again: ").strip()
-        user_input = param.default
       
       parser = type_parsers.get(param.annotation)
       if parser:

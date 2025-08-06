@@ -39,6 +39,8 @@ class Profile(BaseMessage):
   
   @classmethod
   def receive(cls, raw: str) -> "Profile":
-    return cls.parse(msg_format.deserialize_message(raw))
+    received = cls.parse(msg_format.deserialize_message(raw))
+    client_state.add_peer(received.user_id)
+    return received
   
 __message__ = Profile

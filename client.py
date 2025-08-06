@@ -37,6 +37,7 @@ def run_threads():
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         interface.print_message(received_msg)
+        client_state.add_recent_message(received_msg)
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
   
   def broadcast_receive_loop():
@@ -46,6 +47,7 @@ def run_threads():
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         interface.print_message(received_msg)
+        client_state.add_recent_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
@@ -93,8 +95,6 @@ def main():
     log.info(f"Using port: {config.PORT}")
     log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
     log.info(f"Broadcast IP: {config.BROADCAST_IP}")
-    log.info(f"{client_state.get_followers()}")
-    log.info(f"{client_state.get_following()}")
     user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
       try:

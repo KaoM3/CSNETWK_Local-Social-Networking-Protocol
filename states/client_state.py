@@ -20,6 +20,7 @@ class ClientState:
     self._lock = threading.RLock()
     self._user_id = None
     self._peers = []
+    self._peer_display_names = {}
     self._followers = []
     self._following = []
     self._recent_messages = []
@@ -67,6 +68,33 @@ class ClientState:
       if peer in self._peers:
         self._peers.remove(peer)
         client_logger.debug(f"Removed peer: {peer}")
+
+  def update_peer_display_name(self, peer: UserID, display_name: str):
+    with self._lock:
+      self._validate_user_id(peer)
+      if peer not in self._peers:
+        self._peers.append(peer)
+        client_logger.debug(f"Added peer: {peer}")
+
+      current_name = self._peer_display_names.get(peer)
+      if display_name == "":
+        if peer in self._peer_display_names:
+          del self._peer_display_names[peer]
+          client_logger.debug(f"Removed display name for {peer}")
+      elif current_name != display_name:
+        self._peer_display_names[peer] = display_name
+        client_logger.debug(f"Set display name {display_name} for {peer}")
+
+  def get_peer_display_name(self, peer: UserID) -> str:
+    with self._lock:
+      self._validate_user_id(peer)
+      if peer in self._peer_display_names:
+        return self._peer_display_names[peer]
+      return ""
+    
+  def get_peer_display_names(self) -> dict:
+    with self._lock:
+      return self._peer_display_names.copy()
 
   def add_follower(self, follower: UserID):
     with self._lock:

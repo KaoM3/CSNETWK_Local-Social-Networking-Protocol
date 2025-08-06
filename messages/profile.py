@@ -42,12 +42,21 @@ class Profile(BaseMessage):
     new_obj.user_id = UserID.parse(data["USER_ID"])
     new_obj.display_name = str(data["DISPLAY_NAME"])
     new_obj.status = str(data["STATUS"])
+    # TODO: Add accepting of AVATAR_ fields
     return new_obj
   
   @classmethod
   def receive(cls, raw: str) -> "Profile":
     received = cls.parse(msg_format.deserialize_message(raw))
     client_state.add_peer(received.user_id)
+    client_state.update_peer_display_name(received.user_id, received.display_name)
     return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    if self.display_name == "":
+      return f"{self.user_id}'s status: {self.status}"
+    return f"{self.display_name}'s status: {self.status}"
   
 __message__ = Profile

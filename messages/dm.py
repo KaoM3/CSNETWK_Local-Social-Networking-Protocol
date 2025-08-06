@@ -80,6 +80,9 @@ class Dm(BaseMessage):
   def info(self, verbose: bool = False) -> str:
     if verbose:
       return f"{self.payload}"
+    display_name = client_state.get_peer_display_name(self.from_user)
+    if display_name != "":
+      return f"{display_name}: {self.content}"
     return f"{self.from_user}: {self.content}"
 
 __message__ = Dm

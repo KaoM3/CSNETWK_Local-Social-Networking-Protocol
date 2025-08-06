@@ -30,6 +30,7 @@ class Post(BaseMessage):
       "TYPE": self.TYPE,
       "USER_ID": self.user_id,
       "CONTENT": self.content,
+      "TTL": self.ttl,
       "MESSAGE_ID": self.message_id,
       "TOKEN": self.token,
     }
@@ -49,6 +50,7 @@ class Post(BaseMessage):
     new_obj.type = data["TYPE"]
     new_obj.user_id = UserID.parse(data["USER_ID"])
     new_obj.content = str(data["CONTENT"])
+    new_obj.ttl = msg_format.sanitize_ttl(data["TTL"])
 
     message_id = data["MESSAGE_ID"]
     msg_format.validate_message_id(message_id)
@@ -83,6 +85,9 @@ class Post(BaseMessage):
   def info(self, verbose:bool = False) -> str:
     if verbose:
       return f"{self.payload}"
+    display_name = client_state.get_peer_display_name(self.user_id)
+    if display_name != "":
+      return f"{display_name}: {self.content}"
     return f"{self.user_id}: {self.content}"
 
 

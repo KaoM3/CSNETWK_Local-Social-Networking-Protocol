@@ -108,6 +108,7 @@ def show_client_details():
   client_logger.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
   client_logger.info(f"Broadcast IP: {config.BROADCAST_IP}")
   client_logger.info(f"Peers: {client_state.get_peers()}")
+  client_logger.info(f"Peer display names: {client_state.get_peer_display_names()}")
   client_logger.info(f"Followers: {client_state.get_followers()}")
   client_logger.info(f"Following: {client_state.get_following()}")
 

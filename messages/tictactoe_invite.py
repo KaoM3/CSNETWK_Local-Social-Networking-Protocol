@@ -6,12 +6,16 @@
 from datetime import datetime, timezone
 import socket
 import random
+import config
+import client
 
 from custom_types.user_id import UserID
 from custom_types.token import Token
 from custom_types.base_message import BaseMessage
 from utils import msg_format
 from states.client_state import client_state
+from messages.ack import Ack
+
 
 
 class TicTacToeInvite(BaseMessage):
@@ -101,10 +105,15 @@ class TicTacToeInvite(BaseMessage):
         """Processes a received game invitation and displays initial game info."""
 
         received_invite = cls.parse(msg_format.deserialize_message(raw))
+
         
         # Print invite information
         print(f"{received_invite.from_user} invited you to play Tic-Tac-Toe.")
-
+        
+        client.initialize_sockets(config.PORT)
+        ack = Ack(message_id=received_invite.message_id)
+        ack.send(socket=client.get_broadcast_socket(), ip=received_invite.from_user.get_ip(), port=config.PORT)
+        
 
         return received_invite
 

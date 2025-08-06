@@ -23,10 +23,9 @@ class ClientLogger:
 
     def _initialize(self, verbose: bool = False):
         self._verbose_mode = verbose
-        self._log_lock = threading.Lock()  # <== Lock for print/log-level safety
-        level = logging.DEBUG if self._verbose_mode else logging.INFO
+        self._log_lock = threading.Lock()
         logging.basicConfig(
-            level=level,
+            level=logging.DEBUG,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
                 logging.FileHandler("app.log", mode="w"),
@@ -36,8 +35,6 @@ class ClientLogger:
     def set_verbose(self, verbose: bool):
         with self._log_lock:
             self._verbose_mode = verbose
-            level = logging.DEBUG if self._verbose_mode else logging.INFO
-            logging.getLogger().setLevel(level)
 
     def print_log(self, message: str, color: Color, non_verbose=False):
         if self._verbose_mode or non_verbose:

@@ -1,6 +1,7 @@
 import threading
 import log
 from custom_types.user_id import UserID
+from custom_types.base_message import BaseMessage
 
 class ClientState:
   _instance = None
@@ -19,11 +20,16 @@ class ClientState:
     self._peers = []
     self._followers = []
     self._following = []
+    self._recent_messages = []
     self._lock = threading.Lock()
 
   def _validate_user_id(self, data):
     if not isinstance(data, UserID):
       raise ValueError(f"ERROR: {data} is not of type UserID")
+    
+  def _validate_base_message(self, data):
+    if not isinstance(data, BaseMessage):
+      raise ValueError(f"ERROR: {data} is not of type BaseMessage")
 
   def get_user_id(self):
     with self._lock:
@@ -81,6 +87,10 @@ class ClientState:
         self._following.remove(target)
         log.info(f"Removed following: {target}")
 
+  def get_peers(self) -> list[UserID]:
+    with self._lock:
+      return self._peers.copy()
+    
   def get_followers(self) -> list[UserID]:
     with self._lock:
       return self._followers.copy()
@@ -88,5 +98,15 @@ class ClientState:
   def get_following(self) -> list[UserID]:
     with self._lock:
       return self._following.copy()
+    
+  def add_recent_message(self, message: BaseMessage):
+    with self._lock:
+      self._validate_base_message(message)
+      self._recent_messages.append(message)
+
+  def get_recent_messages(self) -> list:
+    with self._lock:
+      return self._recent_messages
+
 
 client_state = ClientState()

@@ -92,6 +92,29 @@ class GameSessionManager:
                 return True
 
         return False
+    
+    def find_winning_line(self, game_id: str) -> Optional[str]:
+        """Finds and returns the winning line as a comma-separated string, e.g., '0,1,2'."""
+        game = self.find_game(game_id)
+        if not game or not game.last_symbol:
+            return None
+
+        symbol = game.last_symbol
+
+        winning_combinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],  # Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],  # Columns
+            [0, 4, 8], [2, 4, 6]              # Diagonals
+        ]
+
+        for combo in winning_combinations:
+            if all(game.board[i] == symbol for i in combo):
+                return ",".join(str(pos) for pos in combo)  # ✅ return string like "0,1,2"
+
+        return None
+
+
+
 
 
 # ✅ Shared instance (singleton-like usage)

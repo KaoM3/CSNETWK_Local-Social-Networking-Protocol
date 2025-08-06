@@ -47,7 +47,7 @@ class TicTacToeResult(BaseMessage):
         }
 
     def __init__(self, to: UserID, gameid: str, result: str, symbol: str,
-                 winning_line: str, turn: int, ttl: int = 3600):
+                 winning_line: list, turn: int, ttl: int = 3600):
         """
         Initialize a TicTacToeResult message.
         

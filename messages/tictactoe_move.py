@@ -9,6 +9,7 @@ from utils import msg_format
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
 from messages.ack import Ack
+from messages.tictactoe_result import TicTacToeResult
 from states.game import game_session_manager
 import socket
 import config
@@ -147,7 +148,18 @@ class TicTacToeMove(BaseMessage):
         game.print_board()
 
         if game_session_manager.is_winning_move(move_received.game_id):
+            winning_line = game_session_manager.find_winning_line(move_received.game_id)
             print(f"🏆 Player {move_received.symbol} wins the game {move_received.game_id}!")
+            print(f"✔️ Winning line: {winning_line}")
+            result = TicTacToeResult(
+                to=move_received.to_user,
+                gameid=move_received.game_id,
+                result="LOSE",
+                symbol=move_received.symbol,
+                winning_line=winning_line,
+                turn=move_received.turn,
+            ) 
+            result.send(socket=client.get_broadcast_socket(), ip=move_received.to_user.get_ip(), port=config.PORT)
 
         return move_received
 

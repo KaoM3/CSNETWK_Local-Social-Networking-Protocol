@@ -65,10 +65,18 @@ def display_help(message_registry: dict):
 
   help_prompt.append("info:\t\tshows client details")
   help_prompt.append("recent:\t\tshows received messages")
+  help_prompt.append("verbose:\ttoggles verbose mode settings")
   help_prompt.append("cls:\t\tclears the screen")
   help_prompt.append("help:\t\tshows available commands")
   help_prompt.append("exit:\t\texits the program")
   client_logger.info(format_prompt(help_prompt))
+
+def toggle_verbose():
+  if config.VERBOSE:
+    config.VERBOSE = False
+  else:
+    config.VERBOSE = True
+  client_logger.info(f"Verbose mode set to {config.VERBOSE}")
 
 def get_command(message_registry: dict):
   valid_commands = message_registry.keys
@@ -76,6 +84,10 @@ def get_command(message_registry: dict):
     command = input().upper()
     if command in valid_commands():
       return command
+    elif command == "":
+      continue
+    elif command == "VERBOSE":
+      toggle_verbose()
     elif command == "HELP":
       display_help(message_registry)
     elif command == "CLS":
@@ -86,6 +98,8 @@ def get_command(message_registry: dict):
       show_recent_messages()
     elif command == "EXIT":
       return None
+    else:
+      client_logger.warn(f"Command {command} is not valid. Enter help for list of commands.")
     
 
 def print_message(msg_obj: BaseMessage):

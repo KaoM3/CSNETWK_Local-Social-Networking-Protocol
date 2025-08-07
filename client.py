@@ -30,6 +30,7 @@ def initialize_sockets(port):
 def run_threads():
   # Concurrent Thread for receiving unicast messages
   def unicast_receive_loop():
+    client_logger.debug("INIT THREAD: unicast_receive_loop()")
     while True:
       data, address = UNICAST_SOCKET.recvfrom(1024)
       client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
@@ -40,6 +41,7 @@ def run_threads():
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
   
   def broadcast_receive_loop():
+    client_logger.debug("INIT THREAD: broadcast_receive_loop()")
     while True:
       data, address = BROADCAST_SOCKET.recvfrom(1024)
       client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
@@ -51,6 +53,7 @@ def run_threads():
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():
+    client_logger.debug("INIT THREAD: broadcast_presence()")
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
       router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)

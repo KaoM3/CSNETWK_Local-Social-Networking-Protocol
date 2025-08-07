@@ -66,12 +66,13 @@ class Unfollow(BaseMessage):
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
 
-  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
     """Send unfollow request and update local following list"""
     if ip == "default":
       ip = self.to_user.get_ip()
-    super().send(socket, ip, port, encoding)
+    dest = super().send(socket, ip, port, encoding)
     client_state.remove_following(self.to_user)
+    return dest
 
   @classmethod
   def receive(cls, raw: str) -> "Unfollow":

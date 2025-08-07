@@ -62,7 +62,7 @@ class Post(BaseMessage):
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
 
-  def send(self, sock: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
+  def send(self, sock: socket.socket, ip: str="default", port: int=50999, encoding: str = "utf-8"):
     """Sends the POST message to all followers using a provided socket."""
     msg = msg_format.serialize_message(self.payload)
 
@@ -73,6 +73,8 @@ class Post(BaseMessage):
         client_logger.debug(f"Sent to {follower_ip}:{port}")
       except Exception as e:
         client_logger.error(f"Error sending to {follower}: {e}")
+    
+    return (ip, port)
 
   @classmethod
   def receive(cls, raw: str) -> "Post":

@@ -47,8 +47,8 @@ def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: in
   try:
     message_class = MESSAGE_REGISTRY.get(type)
     message_obj = message_class(**data)
-    message_obj.send(socket, ip, port, config.ENCODING)
-    client_logger.send(f"MESSAGE: {message_obj.payload} TO ({ip}, {port})")
+    dest = message_obj.send(socket, ip, port, config.ENCODING)
+    client_logger.send(f"MESSAGE: {message_obj.payload} TO ({dest[0]}, {dest[1]})")
   except Exception:
     client_logger.error("ERROR: (send_message)" + traceback.format_exc())
 

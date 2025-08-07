@@ -31,10 +31,10 @@ class Profile(BaseMessage):
     self.status = status
     msg_format.validate_message(self.payload, self.__schema__)
 
-  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
     if ip == "default":
       ip = config.BROADCAST_IP
-    super().send(socket, ip, port, encoding)
+    return super().send(socket, ip, port, encoding)
 
   @classmethod
   def parse(cls, data: str) -> "Profile":

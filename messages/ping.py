@@ -33,10 +33,10 @@ class Ping(BaseMessage):
     msg_format.validate_message(new_instance.payload, cls.__schema__)
     return new_instance
         
-  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
     if ip == "default":
       ip = config.BROADCAST_IP
-    super().send(socket, ip, port, encoding)
+    return super().send(socket, ip, port, encoding)
 
   @classmethod
   def receive(cls, raw: str) -> "Ping":

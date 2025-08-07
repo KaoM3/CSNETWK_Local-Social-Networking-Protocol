@@ -64,12 +64,13 @@ class Follow(BaseMessage):
     msg_format.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.from_user)
     return new_obj
   
-  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
     """Send follow request and update local following list"""
     if ip == "default":
       ip = self.to_user.get_ip()
-    super().send(socket, ip, port, encoding)
+    dest = super().send(socket, ip, port, encoding)
     client_state.add_following(self.to_user)
+    return dest
 
   @classmethod
   def receive(cls, raw: str) -> "Follow":

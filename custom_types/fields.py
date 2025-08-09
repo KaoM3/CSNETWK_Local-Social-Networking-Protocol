@@ -14,7 +14,7 @@ class TTL:
       raise ValueError("Invalid TTL: must be a positive integer")
 
   @classmethod
-  def is_valid(ttl: int) -> bool:
+  def is_valid(cls, ttl: int) -> bool:
     if ttl <= 0:
       return False
     return True
@@ -24,6 +24,9 @@ class TTL:
     if not cls.is_valid(raw):
       raise ValueError("Invalid TTL: must be a positive integer")
     return cls(raw)
+  
+  def get_value(self) -> int:
+    return self.value
   
   def __eq__(self, other):
     if not isinstance(other, TTL):
@@ -52,13 +55,15 @@ class Timestamp:
     return True
   
   @classmethod
-  def _validate(cls, unix):
-    if not isinstance(unix, int) or unix < 0:
-      raise ValueError("Invalid Timestamp: cannot be negative")
+  def _validate(cls, unix: int):
+    if not isinstance(unix, int):
+      raise TypeError(f"Invalid Timestamp {unix}: should be an integer")
+    elif unix < 0:
+      raise ValueError(f"Invalid Timestamp {unix}: cannot be negative")
     try:
       datetime.fromtimestamp(unix, tz=timezone.utc)
     except (ValueError, OverflowError):
-      raise ValueError("Invalid Timestamp: is not valid unix")
+      raise ValueError(f"Invalid Timestamp {unix}: is not valid unix")
 
   @classmethod
   def is_valid(cls, unix: int) -> bool:
@@ -70,7 +75,10 @@ class Timestamp:
 
   @classmethod
   def parse(cls, raw) -> "Timestamp":
-    return cls(raw)
+    return cls(int(raw))
+  
+  def get_time(self) -> int:
+    return self.time
   
   def __eq__(self, other):
     if not isinstance(other, Timestamp):
@@ -85,6 +93,44 @@ class Timestamp:
   
   def __repr__(self):
     return str(self.time)
+  
+  def __add__(self, other):
+    if isinstance(other, TTL):
+      return Timestamp(self.time + other.value)
+    elif isinstance(other, int):
+      return Timestamp(self.time + other)
+    return NotImplemented
+  
+  def __radd__(self, other):
+    return self.__add__(other)
+  
+  def __lt__(self, other):
+    if isinstance(other, Timestamp):
+      return self.time < other.time
+    if isinstance(other, int):
+      return self.time < other
+    return NotImplemented
+
+  def __le__(self, other):
+    if isinstance(other, Timestamp):
+      return self.time <= other.time
+    if isinstance(other, int):
+      return self.time <= other
+    return NotImplemented
+
+  def __gt__(self, other):
+    if isinstance(other, Timestamp):
+      return self.time > other.time
+    if isinstance(other, int):
+      return self.time > other
+    return NotImplemented
+
+  def __ge__(self, other):
+    if isinstance(other, Timestamp):
+      return self.time >= other.time
+    if isinstance(other, int):
+      return self.time >= other
+    return NotImplemented
 
 class MessageID:
   code: int
@@ -122,6 +168,9 @@ class MessageID:
     random_bits = secrets.randbits(64)
     code = f"{random_bits:016x}" 
     return cls(code)
+  
+  def get_code(self) -> str:
+    return self.code
   
   def __str__(self):
     return f"{self.code}"

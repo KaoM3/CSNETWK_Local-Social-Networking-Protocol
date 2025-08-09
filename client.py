@@ -3,6 +3,7 @@ import config
 import threading
 import argparse
 import time
+import ipaddress
 import router
 import inspect
 import interface
@@ -71,6 +72,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--port", type=int, help="Port number to use")
   parser.add_argument("--subnet", type=int, help="Subnet Mask of the network in prefix form")
+  parser.add_argument("--ipaddress", type=str, help="Ip address of the network")
   parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
 
@@ -81,6 +83,10 @@ def main():
     config.SUBNET_MASK = args.subnet
   if args.verbose:
     config.VERBOSE = args.verbose
+  if args.ipaddress:
+    ip_override = ipaddress.ip_address(args.ipaddress)
+    config.CLIENT_IP = str(ip_override)
+    config.BROADCAST_IP = config.get_broadcast_ip(config.SUBNET_MASK)
 
   # Setup logging with verbose flag
   client_logger.set_verbose(config.VERBOSE)

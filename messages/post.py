@@ -36,12 +36,12 @@ class Post(BaseMessage):
       "TOKEN": self.token,
     }
 
-  def __init__(self, content: str, ttl: int = 3600):
+  def __init__(self, content: str, ttl: TTL = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
     self.user_id = client_state.get_user_id()
     self.content = content
-    self.ttl = TTL.parse(ttl)
+    self.ttl = ttl
     self.timestamp = Timestamp(unix_now)
     self.message_id = MessageID.generate()
     self.token = Token(self.user_id, self.timestamp + self.ttl, self.SCOPE)

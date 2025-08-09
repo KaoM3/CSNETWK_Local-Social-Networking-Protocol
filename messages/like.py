@@ -32,7 +32,7 @@ class Like(BaseMessage):
       "TOKEN": self.token,
     }
 
-  def __init__(self, to: UserID, post_timestamp: Timestamp, action: str, ttl:int=3600):
+  def __init__(self, to: UserID, post_timestamp: Timestamp, action: str, ttl: TTL = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
     self.from_user = client_state.get_user_id()
@@ -43,7 +43,7 @@ class Like(BaseMessage):
       raise ValueError("Invalid action: must be LIKE or UNLIKE")
     self.action = user_action
     self.timestamp = Timestamp(unix_now)
-    self.ttl = TTL.parse(ttl)
+    self.ttl = ttl
     self.token = Token(self.from_user, self.timestamp + self.ttl, self.SCOPE)
 
   @classmethod

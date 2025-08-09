@@ -21,9 +21,13 @@ class TTL:
       
   @classmethod
   def parse(cls, raw) -> "TTL":
-    if not cls.is_valid(int(raw)):
+    try:
+      raw = int(raw)
+    except:
       raise ValueError("Invalid TTL: must be a positive integer")
-    return cls(int(raw))
+    if not cls.is_valid(raw):
+      raise ValueError("Invalid TTL: must be a positive integer")
+    return cls(raw)
   
   def get_value(self) -> int:
     return self.value

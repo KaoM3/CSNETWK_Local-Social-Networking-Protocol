@@ -33,14 +33,14 @@ class Follow(BaseMessage):
       "TOKEN": self.token,
     }
 
-  def __init__(self, to: UserID, ttl: int = 3600):
+  def __init__(self, to: UserID, ttl: TTL = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
     self.from_user = client_state.get_user_id()
     self.to_user = to
     self.timestamp = Timestamp(unix_now)
     self.message_id = MessageID.generate()
-    self.ttl = TTL.parse(ttl)
+    self.ttl = ttl
     self.token = Token(self.from_user, self.timestamp + self.ttl, self.SCOPE)
 
   @classmethod

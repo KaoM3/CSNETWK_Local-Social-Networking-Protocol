@@ -118,11 +118,10 @@ def main():
         msg = router.MESSAGE_REGISTRY.get(user_input)
         msg_constructor_args = inspect.signature(msg.__init__)
         new_msg = interface.get_func_args(msg_constructor_args)
-        ip_input = client_logger.input("Enter dest ip (optional): ")
-        if ip_input == None or ip_input == "":
-          ip_input = "default"
-        sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
-        client_state.add_recent_message(sent_msg)
+        dest_ip = "default"
+        sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg, dest_ip, config.PORT)
+        if sent_msg is not None:
+          client_state.add_recent_message(sent_msg)
       except Exception as e:
         client_logger.error("An error occurred:\n" + traceback.format_exc())
     elif user_input is None:

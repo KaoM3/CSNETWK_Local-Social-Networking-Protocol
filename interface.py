@@ -1,7 +1,7 @@
 import os
 import config
 import inspect
-from custom_types.fields import UserID, Token, Timestamp
+from custom_types.fields import UserID, Token, Timestamp, TTL
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
 from client_logger import client_logger
@@ -10,6 +10,7 @@ type_parsers = {
   UserID: UserID.parse,
   Token: Token.parse,
   Timestamp: Timestamp.parse,
+  TTL: TTL.parse
   # add more types as needed
 }
 
@@ -21,38 +22,6 @@ def format_prompt(lines: list):
   for line in lines:
     result += f"{line}\n"
   return result + "\n"
-
-def get_message_type(message_registry: dict):
-  prompt = []
-  prompt.append("Select an action:")
-  for i, (key, _) in enumerate(message_registry.items(), start=1):
-    prompt.append(f"{i}. {key}")
-  prompt.append(f"{i + 1}. Show Client Info")
-  prompt.append(f"{i + 2}. Show Recent Messages")
-  prompt.append(f"{i + 3}. Clear Screen")
-  prompt.append(f"{i + 4}. Exit")
-  while True:
-    client_logger.info(format_prompt(prompt))
-    choice = client_logger.input("Enter your action number: ").strip()
-    if choice.isdigit():
-      choice_num = int(choice)
-      if 1 <= choice_num <= len(message_registry):
-        selected_key = list(message_registry.keys())[choice_num - 1]
-        client_logger.info(f"You selected: {selected_key}")
-        return selected_key
-      elif choice_num == len(message_registry) + 1:
-        show_client_details()
-      elif choice_num == len(message_registry) + 2:
-        show_recent_messages()
-      elif choice_num == len(message_registry) + 3:
-        clear_screen()
-      elif choice_num == len(message_registry) + 4:
-        client_logger.info("Exiting. Goodbye!")
-        return None
-      else:
-        client_logger.error("Invalid choice. Please enter a valid number.")
-    else:
-      client_logger.error("Invalid input. Please enter a number.")
 
 def display_help(message_registry: dict):
   help_prompt = []

@@ -1,5 +1,6 @@
 import threading
 from custom_types.user_id import UserID
+from custom_types.token import Token
 from custom_types.base_message import BaseMessage
 from client_logger import client_logger
 import time
@@ -28,6 +29,10 @@ class ClientState:
   def _validate_user_id(self, data):
     if not isinstance(data, UserID):
       raise ValueError(f"ERROR: {data} is not of type UserID")
+    
+  def _validate_token(self, data):
+    if not isinstance(data, Token):
+      raise ValueError(f"ERROR: {data} is not of type Token")
     
   def _validate_base_message(self, data):
     if not isinstance(data, BaseMessage):
@@ -145,6 +150,18 @@ class ClientState:
     self.cleanup_expired_messages()
     with self._lock:
       return self._recent_messages
+    
+  def revoke_token(self, revoked_token: Token):
+    with self._lock:
+      self._validate_token(revoked_token)
+      valid_messages = []
+      for msg in self._recent_messages:
+        msg_token = getattr(msg, "token", None)
+        if msg_token is None or msg_token != revoked_token:
+          valid_messages.append(msg)
+          continue
+        client_logger.debug(f"REVOKE: Invalidating message: {msg}")
+      self._recent_messages = valid_messages
 
 
 client_state = ClientState()

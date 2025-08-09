@@ -127,6 +127,29 @@ class TicTacToeMove(BaseMessage):
         """Sends game move to other player and updates game state"""
         msg = msg_format.serialize_message(self.payload)
         socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
+
+        game = game_session_manager.find_game(self.game_id)
+
+        if not game:
+            game = game_session_manager.create_game(self.game_id)# Acknowledge the move
+
+        game.move(self.position, self.symbol)
+        game.print_board()
+
+        if game_session_manager.is_winning_move(self.game_id):
+            winning_line = game_session_manager.find_winning_line(self.game_id)
+            print(f"Player {self.symbol} wins the game {self.game_id}!")
+            print(f"Winning line: {winning_line}")
+            result = TicTacToeResult(
+                to=self.to_user,
+                gameid=self.game_id,
+                result="LOSE",
+                symbol=self.symbol,
+                winning_line=winning_line,
+                turn=self.turn,
+            ) 
+            result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
+
         print(f"Move sent to {self.to_user} at position {self.position}")
 
 
@@ -143,8 +166,8 @@ class TicTacToeMove(BaseMessage):
 
         game = game_session_manager.find_game(move_received.game_id)
 
-        #if not game:
-         #   game = game_session_manager.create_game(move_received.game_id)
+        if not game:
+            game = game_session_manager.create_game(move_received.game_id)
 
         game.move(move_received.position, move_received.symbol)
         game.print_board()

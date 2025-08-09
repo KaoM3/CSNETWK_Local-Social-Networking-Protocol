@@ -50,7 +50,7 @@ class Ack(BaseMessage):
 
         # Send to the specified self
         self_ip = client_state.get_user_id().get_ip()
-        socket.sendto(msg.encode(encoding), (self_ip, port))
+        socket.sendto(msg.encode(encoding), (ip, port))
 
     @classmethod
     def receive(cls, raw: str) -> "Ack":

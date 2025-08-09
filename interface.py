@@ -1,8 +1,7 @@
 import os
 import config
 import inspect
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token, Timestamp
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
 from client_logger import client_logger
@@ -10,6 +9,7 @@ from client_logger import client_logger
 type_parsers = {
   UserID: UserID.parse,
   Token: Token.parse,
+  Timestamp: Timestamp.parse,
   # add more types as needed
 }
 

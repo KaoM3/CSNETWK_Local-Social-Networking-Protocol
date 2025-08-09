@@ -1,5 +1,4 @@
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token, Timestamp, MessageID, TTL
 from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
@@ -19,9 +18,9 @@ class Post(BaseMessage):
     "TYPE": TYPE,
     "USER_ID": {"type": UserID, "required": True},
     "CONTENT": {"type": str, "required": True},
-    "TTL": {"type": int, "required": True},
-    "TIMESTAMP": {"type": int, "required": True},
-    "MESSAGE_ID": {"type": str, "required": True},
+    "TTL": {"type": TTL, "required": True},
+    "TIMESTAMP": {"type": Timestamp, "required": True},
+    "MESSAGE_ID": {"type": MessageID, "required": True},
     "TOKEN": {"type": Token, "required": True},
   }
 
@@ -37,15 +36,15 @@ class Post(BaseMessage):
       "TOKEN": self.token,
     }
 
-  def __init__(self, content: str, ttl: int = 3600):
+  def __init__(self, content: str, ttl: TTL = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
     self.user_id = client_state.get_user_id()
     self.content = content
-    self.ttl = msg_format.sanitize_ttl(ttl)
-    self.timestamp = unix_now
-    self.message_id = msg_format.generate_message_id()
-    self.token = Token(self.user_id, unix_now + self.ttl, self.SCOPE)
+    self.ttl = ttl
+    self.timestamp = Timestamp(unix_now)
+    self.message_id = MessageID.generate()
+    self.token = Token(self.user_id, self.timestamp + self.ttl, self.SCOPE)
 
   @classmethod
   def parse(cls, data: dict) -> "Post":
@@ -53,19 +52,11 @@ class Post(BaseMessage):
     new_obj.type = data["TYPE"]
     new_obj.user_id = UserID.parse(data["USER_ID"])
     new_obj.content = str(data["CONTENT"])
-    new_obj.ttl = msg_format.sanitize_ttl(data["TTL"])
-
-    timestamp = int(data["TIMESTAMP"])
-    msg_format.validate_timestamp(timestamp)
-    new_obj.timestamp = timestamp
-
-    message_id = data["MESSAGE_ID"]
-    msg_format.validate_message_id(message_id)
-    new_obj.message_id = message_id
-
+    new_obj.ttl = TTL.parse(int(data["TTL"]))
+    new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
+    new_obj.message_id = MessageID.parse(data["MESSAGE_ID"])
     new_obj.token = Token.parse(data["TOKEN"])
-    msg_format.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.user_id)
-
+    Token.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.user_id)
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
 

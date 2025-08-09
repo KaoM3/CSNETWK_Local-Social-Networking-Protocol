@@ -1,6 +1,6 @@
 from utils import msg_format
 from states.client_state import client_state
-from custom_types.user_id import UserID
+from custom_types.fields import UserID
 from custom_types.base_message import BaseMessage
 import socket
 import config

@@ -22,16 +22,24 @@ class BaseMessage(ABC):
     """Parses structured data into a message instance"""
     raise NotImplementedError
 
-  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
     """Sends this message using the provided socket"""
     msg = msg_format.serialize_message(self.payload)
     socket.sendto(msg.encode(encoding), (ip, port))
+    return (ip, port)
 
   @classmethod
   @abstractmethod
   def receive(cls, raw: str) -> "BaseMessage":
     """Receives and parses a message of this type"""
     raise NotImplementedError
+
+  def info(self, verbose: bool = False) -> str:
+    """Returns this message's information as a string"""
+    if verbose:
+      return f"{self.payload}"
+    else:
+      return f"{self.__class__.__name__}"
 
   @property
   @abstractmethod

@@ -1,10 +1,3 @@
-import secrets
-import re
-import config
-from datetime import datetime, timezone
-from custom_types.token import Token
-from custom_types.user_id import UserID
-  
 def serialize_message(msg: dict) -> str:
   """Serializes `msg` into a string, ready to be encoded and sent over the network"""
   lines = []
@@ -83,57 +76,6 @@ def validate_message(msg: dict, schema: dict):
     if field in msg and "type" in rules:
       if not isinstance(msg[field], rules["type"]):
         raise TypeError(f"Invalid type for {field}: expected {rules['type'].__name__}, got {type(msg[field]).__name__}")
-
-def sanitize_ttl(ttl: int):
-  try:
-    ttl = int(ttl)
-    if ttl <= 0:
-      raise ValueError()
-  except (ValueError, TypeError):
-    ttl = config.DEFAULT_TTL
-  return ttl
-
-def isTokenExpired(token: Token) -> bool:
-  if token.valid_until > datetime.now().timestamp():
-    return False
-  return True
-
-def validate_token(token: Token, *, expected_user_id: UserID, expected_scope: Token.Scope):
-  if token.user_id != expected_user_id:
-    raise ValueError("Invalid Token: user_id mismatch")
-  
-  if isTokenExpired(token):
-    raise ValueError("Invalid Token: expired")
-  
-  if token.scope != expected_scope:
-    raise ValueError(f"Invalid Token: expected scope '{expected_scope}', got '{token.scope}'")
-
-def unix_to_datetime(utc_timestamp) -> datetime:
-  utc_datetime = datetime.fromtimestamp(utc_timestamp, tz=timezone.utc)
-  return utc_datetime
-
-def datetime_to_unix(utc_datetime: datetime) -> int:
-  return int(utc_datetime.timestamp())
-
-def validate_timestamp(unix: int):
-  if not isinstance(unix, int) or unix < 0:
-    raise ValueError(f"Invalid timestamp: {unix}")
-  try:
-    datetime.fromtimestamp(unix, tz=timezone.utc)
-  except (ValueError, OverflowError):
-      raise ValueError(f"Invalid timestamp: {unix}")
-
-def generate_message_id() -> str:
-  random_bits = secrets.randbits(64)
-  return f"{random_bits:016x}" 
-
-def validate_message_id(message_id: str):
-  if not isinstance(message_id, str):
-    raise ValueError("MESSAGE_ID must be a string")
-  if len(message_id) != 16:
-    raise ValueError("MESSAGE_ID must be exactly 16 characters")
-  if not re.fullmatch(r'[0-9a-f]{16}', message_id):
-    raise ValueError("MESSAGE_ID must be a lowercase hexadecimal string")
   
 def extract_message_type(msg: str) -> str:
   type_field = msg.split("\n", 1)[0]

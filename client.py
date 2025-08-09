@@ -115,7 +115,8 @@ def main():
         ip_input = client_logger.input("Enter dest ip (optional): ")
         if ip_input == None or ip_input == "":
           ip_input = "default"
-        router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
+        sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
+        client_state.add_recent_message(sent_msg)
       except Exception as e:
         client_logger.error("An error occurred:\n" + traceback.format_exc())
     elif user_input is None:

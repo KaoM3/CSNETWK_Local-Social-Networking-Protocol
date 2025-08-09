@@ -43,15 +43,17 @@ def load_messages(dir: str):
     except Exception:
       client_logger.error("ERROR: (load_messages)" + traceback.format_exc())
 
-def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: int):
+def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: int) -> "BaseMessage":
   try:
     message_class = MESSAGE_REGISTRY.get(type)
     message_obj = message_class(**data)
     dest = message_obj.send(socket, ip, port, config.ENCODING)
     client_logger.send(f"MESSAGE: {message_obj.payload} TO ({dest[0]}, {dest[1]})")
-  except Exception:
-    client_logger.warn("WARNING: Failed to send message")
-    client_logger.debug("ERROR in send_message(): traceback.format_exc()")
+    return message_obj
+  except Exception as e:
+    client_logger.warn("Failed to send message")
+    client_logger.warn(f"{e}")
+    client_logger.debug(f"ERROR in send_message(): {traceback.format_exc()}")
 
 def recv_message(raw: bytes, address) -> BaseMessage:
   try:

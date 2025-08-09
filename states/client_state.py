@@ -90,6 +90,13 @@ class ClientState:
         self._peer_display_names[peer] = display_name
         client_logger.debug(f"Set display name {display_name} for {peer}")
 
+  def get_post_message(self, timestamp) -> "BaseMessage":
+    with self._lock:
+      for msg in self._recent_messages:
+        if msg.type == "POST" and msg.timestamp == timestamp:
+            return msg
+      return None
+
   def get_peer_display_name(self, peer: UserID) -> str:
     with self._lock:
       self._validate_user_id(peer)

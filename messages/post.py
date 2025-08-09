@@ -20,6 +20,7 @@ class Post(BaseMessage):
     "USER_ID": {"type": UserID, "required": True},
     "CONTENT": {"type": str, "required": True},
     "TTL": {"type": int, "required": True},
+    "TIMESTAMP": {"type": int, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
     "TOKEN": {"type": Token, "required": True},
   }
@@ -31,6 +32,7 @@ class Post(BaseMessage):
       "USER_ID": self.user_id,
       "CONTENT": self.content,
       "TTL": self.ttl,
+      "TIMESTAMP": self.timestamp,
       "MESSAGE_ID": self.message_id,
       "TOKEN": self.token,
     }
@@ -40,8 +42,9 @@ class Post(BaseMessage):
     self.type = self.TYPE
     self.user_id = client_state.get_user_id()
     self.content = content
-    self.message_id = msg_format.generate_message_id()
     self.ttl = msg_format.sanitize_ttl(ttl)
+    self.timestamp = unix_now
+    self.message_id = msg_format.generate_message_id()
     self.token = Token(self.user_id, unix_now + self.ttl, self.SCOPE)
 
   @classmethod
@@ -51,6 +54,10 @@ class Post(BaseMessage):
     new_obj.user_id = UserID.parse(data["USER_ID"])
     new_obj.content = str(data["CONTENT"])
     new_obj.ttl = msg_format.sanitize_ttl(data["TTL"])
+
+    timestamp = int(data["TIMESTAMP"])
+    msg_format.validate_timestamp(timestamp)
+    new_obj.timestamp = timestamp
 
     message_id = data["MESSAGE_ID"]
     msg_format.validate_message_id(message_id)
@@ -62,14 +69,14 @@ class Post(BaseMessage):
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
 
-  def send(self, sock: socket.socket, ip: str="default", port: int=50999, encoding: str = "utf-8"):
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str = "utf-8"):
     """Sends the POST message to all followers using a provided socket."""
     msg = msg_format.serialize_message(self.payload)
 
     for follower in client_state.get_followers():
       try:
         follower_ip = follower.get_ip()
-        sock.sendto(msg.encode(encoding), (follower_ip, port))
+        socket.sendto(msg.encode(encoding), (follower_ip, port))
         client_logger.debug(f"Sent to {follower_ip}:{port}")
       except Exception as e:
         client_logger.error(f"Error sending to {follower}: {e}")

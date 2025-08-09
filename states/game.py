@@ -8,7 +8,7 @@ class GameState:
 
     def __init__(self):
         self.board = [' '] * 9
-        self.last_symbol: Optional[str] = None  # ✅ Track last move symbol
+        self.last_symbol: Optional[str] = None  
 
     def get_board_string(self) -> str:
         """Returns the current game board as a string."""
@@ -79,12 +79,12 @@ class GameSessionManager:
         if not game or not game.last_symbol:
             return False
         
-        symbol = game.last_symbol  # ✅ Use the most recent symbol
+        symbol = game.last_symbol  
 
         winning_combinations = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8],  # Rows
-            [0, 3, 6], [1, 4, 7], [2, 5, 8],  # Columns
-            [0, 4, 8], [2, 4, 6]              # Diagonals
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],  
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],  
+            [0, 4, 8], [2, 4, 6]              
         ]
 
         for combo in winning_combinations:
@@ -109,7 +109,7 @@ class GameSessionManager:
 
         for combo in winning_combinations:
             if all(game.board[i] == symbol for i in combo):
-                return ",".join(str(pos) for pos in combo)  # ✅ return string like "0,1,2"
+                return ",".join(str(pos) for pos in combo)  
 
         return None
 
@@ -117,5 +117,4 @@ class GameSessionManager:
 
 
 
-# ✅ Shared instance (singleton-like usage)
 game_session_manager = GameSessionManager()

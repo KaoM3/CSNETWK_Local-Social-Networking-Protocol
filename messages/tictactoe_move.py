@@ -49,7 +49,7 @@ class TicTacToeMove(BaseMessage):
             "TOKEN": self.token
         }
 
-    def __init__(self, to: UserID, gameid: str, position: int, 
+    def __init__(self, to: UserID, game_id: str, position: int, 
                  symbol: str, turn: int, ttl: int = 3600):
         """
         Initialize a new TicTacToe move.
@@ -88,7 +88,7 @@ class TicTacToeMove(BaseMessage):
         self.type = self.TYPE
         self.from_user = client_state.get_user_id()
         self.to_user = to
-        self.game_id = str(gameid)
+        self.game_id = msg_format.check_game_id(game_id)
         self.position = msg_format.sanitize_position(position)
         self.symbol = symbol
         self.turn = msg_format.sanitize_position(turn)
@@ -102,7 +102,9 @@ class TicTacToeMove(BaseMessage):
         new_obj.from_user = UserID.parse(data["FROM"])
         new_obj.to_user = UserID.parse(data["TO"])
 
-        new_obj.game_id = data["GAMEID"]
+
+    
+        new_obj.game_id = msg_format.check_game_id(data["GAMEID"])
         #for future add a way to check if game_id is valid
         
         new_obj.position = msg_format.sanitize_position(data["POSITION"])
@@ -141,16 +143,16 @@ class TicTacToeMove(BaseMessage):
 
         game = game_session_manager.find_game(move_received.game_id)
 
-        if not game:
-            game = game_session_manager.create_game(move_received.game_id)
+        #if not game:
+         #   game = game_session_manager.create_game(move_received.game_id)
 
         game.move(move_received.position, move_received.symbol)
         game.print_board()
 
         if game_session_manager.is_winning_move(move_received.game_id):
             winning_line = game_session_manager.find_winning_line(move_received.game_id)
-            print(f"🏆 Player {move_received.symbol} wins the game {move_received.game_id}!")
-            print(f"✔️ Winning line: {winning_line}")
+            print(f"Player {move_received.symbol} wins the game {move_received.game_id}!")
+            print(f"Winning line: {winning_line}")
             result = TicTacToeResult(
                 to=move_received.to_user,
                 gameid=move_received.game_id,

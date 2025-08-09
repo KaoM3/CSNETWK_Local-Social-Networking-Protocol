@@ -111,6 +111,17 @@ def sanitize_turn(turn: int):
     raise ValueError("Position must be an integer above 0")
   return turn
 
+import re
+
+
+def check_game_id(game_id: str) -> str:
+    pattern = r"g(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+    if re.fullmatch(pattern, game_id):
+        return game_id
+    raise ValueError(f"Invalid GAMEID format: {game_id}")
+
+
+
 def isTokenExpired(token: Token) -> bool:
   if token.valid_until > datetime.now().timestamp():
     return False

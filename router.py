@@ -50,7 +50,8 @@ def send_message(socket: socket.socket, type: str, data: dict, ip: str, port: in
     dest = message_obj.send(socket, ip, port, config.ENCODING)
     client_logger.send(f"MESSAGE: {message_obj.payload} TO ({dest[0]}, {dest[1]})")
   except Exception:
-    client_logger.error("ERROR: (send_message)" + traceback.format_exc())
+    client_logger.warn("WARNING: Failed to send message")
+    client_logger.debug("ERROR in send_message(): traceback.format_exc()")
 
 def recv_message(raw: bytes, address) -> BaseMessage:
   try:

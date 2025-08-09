@@ -74,14 +74,16 @@ def display_help(message_registry: dict):
 def toggle_verbose():
   if config.VERBOSE:
     config.VERBOSE = False
+    client_logger.set_verbose(config.VERBOSE)
   else:
     config.VERBOSE = True
+    client_logger.set_verbose(config.VERBOSE)
   client_logger.info(f"Verbose mode set to {config.VERBOSE}")
 
 def get_command(message_registry: dict):
   valid_commands = message_registry.keys
   while True:
-    command = input().upper()
+    command = input().upper().strip()
     if command in valid_commands():
       return command
     elif command == "":

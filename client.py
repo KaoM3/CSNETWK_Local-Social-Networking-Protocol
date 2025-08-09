@@ -70,7 +70,7 @@ def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
   parser.add_argument("--port", type=int, help="Port number to use")
-  parser.add_argument("--subnet", type=int, help="Subnet Mask of the network")
+  parser.add_argument("--subnet", type=int, help="Subnet Mask of the network in prefix form")
   parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
 

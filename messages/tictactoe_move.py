@@ -82,7 +82,7 @@ class TicTacToeMove(BaseMessage):
         self.to_user = to
         self.game_id = msg_format.check_game_id(game_id)
         self.position = msg_format.sanitize_position(position)
-        self.symbol = game_session_manager.get_symbol(game_id, self.from_user)
+        self.symbol = game_session_manager.get_player_symbol(game_id, self.from_user)
         self.turn = msg_format.sanitize_turn(game_turn)
         self.message_id = MessageID.generate()
         self.token = Token(self.from_user, Timestamp(unix_now) + ttl, Token.Scope.GAME)

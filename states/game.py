@@ -68,7 +68,7 @@ class GameSessionManager:
 
 
     def is_turn(self, game_id: str, user_id: str) -> bool:
-        """Checks if it is the given user's turn."""
+        """Checks if it is the given user's turn and raises ValueError if not."""
         game = self.find_game(game_id)
         if not game:
             raise ValueError(f"Game with ID '{game_id}' does not exist.")
@@ -77,12 +77,17 @@ class GameSessionManager:
             raise ValueError(f"User {user_id} is not a player in game {game_id}")
 
         if user_id == game.player_x:
-            return game.turn % 2 == 1
+            if game.turn % 2 != 1:
+                raise ValueError(f"Player X ({user_id}) can only move on turns 1, 3, 5, etc. Current turn: {game.turn}")
+            return True
         elif user_id == game.player_o:
-            return game.turn % 2 == 0
+            if game.turn % 2 != 0:
+                raise ValueError(f"Player O ({user_id}) can only move on turns 2, 4, 6, etc. Current turn: {game.turn}")
+            return True
 
-        # Should never reach here
+        # This should never happen, but just in case
         raise ValueError(f"User {user_id} is not assigned to any player in game {game_id}")
+
 
     def get_player_symbol(self, game_id: str, user_id: str) -> Optional[str]:
         """Returns the symbol of the player in the game."""

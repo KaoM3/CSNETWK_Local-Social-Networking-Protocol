@@ -125,9 +125,9 @@ class TicTacToeInvite(BaseMessage):
         if not game:
             game_session_manager.create_game(received_invite.game_id)
             if received_invite.symbol == "X":
-                game_session_manager.assign_players(received_invite.game_id, received_invite.to_user, received_invite.from_user)
-            else:
                 game_session_manager.assign_players(received_invite.game_id, received_invite.from_user, received_invite.to_user)
+            else:
+                game_session_manager.assign_players(received_invite.game_id, received_invite.to_user, received_invite.from_user)
 
         return received_invite
 

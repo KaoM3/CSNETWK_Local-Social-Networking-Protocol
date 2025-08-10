@@ -139,7 +139,68 @@ class ClientState:
       if target not in self._following:
         self._following.append(target)
         client_logger.debug(f"Added following: {target}")
+  
+  def remove_following(self, target: UserID):
+    with self._lock:
+      self._validate_user_id(target)
+      if target in self._following:
+        self._following.remove(target)
+        client_logger.debug(f"Removed following: {target}")
 
+  def get_peers(self) -> list[UserID]:
+    with self._lock:
+      return self._peers.copy()
+    
+  def get_followers(self) -> list[UserID]:
+    with self._lock:
+      return self._followers.copy()
+
+  def get_following(self) -> list[UserID]:
+    with self._lock:
+      return self._following.copy()
+    
+  def add_recent_message_received(self, message: BaseMessage):
+    with self._lock:
+      msg_token = getattr(message, "token", None)
+      if msg_token is None or msg_token not in self._revoked_tokens:
+        self._validate_base_message(message)
+        self._recent_messages_received.append(message)
+      else:
+        client_logger.debug("Received message token is revoked.")
+  
+  def add_recent_message_sent(self, message: BaseMessage):
+    with self._lock:
+      self._validate_base_message(message)
+      self._recent_messages_sent.append(message)
+
+
+  def get_recent_messages_received(self) -> list:
+    self.cleanup_expired_messages()
+    with self._lock:
+      return self._recent_messages_received
+    
+  def get_recent_messages_sent(self) -> list:
+    with self._lock:
+      return self._recent_messages_sent
+    
+  def revoke_token(self, revoked_token: Token):
+    with self._lock:
+      self._validate_token(revoked_token)
+      valid_messages = []
+      for msg in self._recent_messages_received:
+        msg_token = getattr(msg, "token", None)
+        if msg_token is None or msg_token != revoked_token:
+          valid_messages.append(msg)
+          continue
+        client_logger.debug(f"REVOKE: Invalidating message: {msg}")
+        self._revoked_tokens.append(revoked_token)
+      self._recent_messages_received = valid_messages
+
+  def get_revoked_tokens(self) -> list[Token]:
+    with self._lock:
+      return self._revoked_tokens
+  
+  #group helpers
   def create_group(self, group_id: str, group_name: str, members: list[UserID] = None):
     with self._lock:
       if members is None:
@@ -208,69 +269,9 @@ class ClientState:
       if group_id not in self._groups:
         return False
       return member in self._groups[group_id]["members"]
-
-  def remove_following(self, target: UserID):
-    with self._lock:
-      self._validate_user_id(target)
-      if target in self._following:
-        self._following.remove(target)
-        client_logger.debug(f"Removed following: {target}")
-
-  def get_peers(self) -> list[UserID]:
-    with self._lock:
-      return self._peers.copy()
-    
-  def get_followers(self) -> list[UserID]:
-    with self._lock:
-      return self._followers.copy()
-
-  def get_following(self) -> list[UserID]:
-    with self._lock:
-      return self._following.copy()
-    
+ 
   def get_group_members(self) -> list[UserID]:
       with self._lock:
         return self._following.copy()
-    
-  def add_recent_message_received(self, message: BaseMessage):
-    with self._lock:
-      msg_token = getattr(message, "token", None)
-      if msg_token is None or msg_token not in self._revoked_tokens:
-        self._validate_base_message(message)
-        self._recent_messages_received.append(message)
-      else:
-        client_logger.debug("Received message token is revoked.")
-  
-  def add_recent_message_sent(self, message: BaseMessage):
-    with self._lock:
-      self._validate_base_message(message)
-      self._recent_messages_sent.append(message)
-
-
-  def get_recent_messages_received(self) -> list:
-    self.cleanup_expired_messages()
-    with self._lock:
-      return self._recent_messages_received
-    
-  def get_recent_messages_sent(self) -> list:
-    with self._lock:
-      return self._recent_messages_sent
-    
-  def revoke_token(self, revoked_token: Token):
-    with self._lock:
-      self._validate_token(revoked_token)
-      valid_messages = []
-      for msg in self._recent_messages_received:
-        msg_token = getattr(msg, "token", None)
-        if msg_token is None or msg_token != revoked_token:
-          valid_messages.append(msg)
-          continue
-        client_logger.debug(f"REVOKE: Invalidating message: {msg}")
-        self._revoked_tokens.append(revoked_token)
-      self._recent_messages_received = valid_messages
-
-  def get_revoked_tokens(self) -> list[Token]:
-    with self._lock:
-      return self._revoked_tokens
-
+      
 client_state = ClientState()

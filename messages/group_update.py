@@ -67,6 +67,14 @@ class GroupUpdate(BaseMessage):
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         msg = msg_format.serialize_message(self.payload)
         # Group create messages should be sent to all peers
+
+        #for each id in add and remove:
+        #group_members = msg_format.string_to_list(self.add)
+        #for add_user in group_members:
+           # add_group_member(self.group_id: str, add_user):
+
+        #sane wtg remove
+
         for peer in client_state.get_peers():
             #if peer != self.from_user:  # Don't send to self
                 try:

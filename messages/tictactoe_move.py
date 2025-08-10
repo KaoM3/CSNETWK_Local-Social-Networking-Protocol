@@ -78,7 +78,7 @@ class TicTacToeMove(BaseMessage):
         else:
             game_turn = game_session_manager.get_turn(game_id)
 
-        game_session_manager.is_player(game_id, to)
+        #game_session_manager.is_player(game_id, to)
         unix_now = int(datetime.now(timezone.utc).timestamp())
         
         self.type = self.TYPE
@@ -96,7 +96,7 @@ class TicTacToeMove(BaseMessage):
         new_obj = cls.__new__(cls)
         new_obj.type = data["TYPE"] 
         new_obj.from_user = UserID.parse(data["FROM"])
-        game_session_manager.is_player(data["GAMEID"], data["TO"])
+        #game_session_manager.is_player(data["GAMEID"], data["TO"])
         new_obj.to_user = UserID.parse(data["TO"])
 
         new_obj.game_id = msg_format.check_game_id(data["GAMEID"])
@@ -139,7 +139,16 @@ class TicTacToeMove(BaseMessage):
             ) 
             result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
 
-        print(f"Move sent to {self.to_user} at position {self.position}")
+        if game_session_manager.is_draw(self.game_id):
+            result = TicTacToeResult(
+                to=self.to_user,
+                gameid=self.game_id,
+                result="DRAW",
+                symbol=self.symbol,
+                winning_line=winning_line,
+                turn=self.turn,
+            ) 
+            result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
 
         if ip == "default":
             ip = self.to_user.get_ip()
@@ -178,6 +187,19 @@ class TicTacToeMove(BaseMessage):
                 turn=move_received.turn,
             ) 
             result.send(socket=client.get_broadcast_socket(), ip=move_received.to_user.get_ip(), port=config.PORT)
+
+        if game_session_manager.is_draw(move_received.game_id):
+            result = TicTacToeResult(
+                to=move_received.to_user,
+                gameid=move_received.game_id,
+                result="DRAW",
+                symbol=move_received.symbol,
+                winning_line=winning_line,
+                turn=move_received.turn,
+            ) 
+            result.send(socket=client.get_broadcast_socket(), ip=move_received.to_user.get_ip(), port=config.PORT)
+            
+            
 
         return move_received
 

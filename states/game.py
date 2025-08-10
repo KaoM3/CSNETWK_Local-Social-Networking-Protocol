@@ -171,6 +171,20 @@ class GameSessionManager:
 
         return False
     
+    def is_draw(self, game_id: str) -> bool:
+        """Check if the game is a draw: board full and no winner."""
+        game = self.find_game(game_id)
+        if not game:
+            return False
+
+        # If any empty space, not a draw yet
+        if ' ' in game.board:
+            return False
+
+        # Board full, no winner => draw
+        return True
+
+    
     def find_winning_line(self, game_id: str) -> Optional[str]:
         """Finds and returns the winning line as a comma-separated string, e.g., '0,1,2'."""
         game = self.find_game(game_id)

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from client_logger import client_logger
 import socket
 
 class Post(BaseMessage):
@@ -18,6 +19,8 @@ class Post(BaseMessage):
     "TYPE": TYPE,
     "USER_ID": {"type": UserID, "required": True},
     "CONTENT": {"type": str, "required": True},
+    "TTL": {"type": int, "required": True},
+    "TIMESTAMP": {"type": int, "required": True},
     "MESSAGE_ID": {"type": str, "required": True},
     "TOKEN": {"type": Token, "required": True},
   }
@@ -28,6 +31,8 @@ class Post(BaseMessage):
       "TYPE": self.TYPE,
       "USER_ID": self.user_id,
       "CONTENT": self.content,
+      "TTL": self.ttl,
+      "TIMESTAMP": self.timestamp,
       "MESSAGE_ID": self.message_id,
       "TOKEN": self.token,
     }
@@ -37,9 +42,10 @@ class Post(BaseMessage):
     self.type = self.TYPE
     self.user_id = client_state.get_user_id()
     self.content = content
+    self.ttl = msg_format.sanitize_ttl(ttl)
+    self.timestamp = unix_now
     self.message_id = msg_format.generate_message_id()
-    ttl = msg_format.sanitize_ttl(ttl)
-    self.token = Token(self.user_id, unix_now + ttl, self.SCOPE)
+    self.token = Token(self.user_id, unix_now + self.ttl, self.SCOPE)
 
   @classmethod
   def parse(cls, data: dict) -> "Post":
@@ -47,6 +53,11 @@ class Post(BaseMessage):
     new_obj.type = data["TYPE"]
     new_obj.user_id = UserID.parse(data["USER_ID"])
     new_obj.content = str(data["CONTENT"])
+    new_obj.ttl = msg_format.sanitize_ttl(data["TTL"])
+
+    timestamp = int(data["TIMESTAMP"])
+    msg_format.validate_timestamp(timestamp)
+    new_obj.timestamp = timestamp
 
     message_id = data["MESSAGE_ID"]
     msg_format.validate_message_id(message_id)
@@ -58,19 +69,19 @@ class Post(BaseMessage):
     msg_format.validate_message(new_obj.payload, new_obj.__schema__)
     return new_obj
 
-  def send(self, sock: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
-    """
-    Sends the POST message to all followers using a provided socket.
-    """
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str = "utf-8"):
+    """Sends the POST message to all followers using a provided socket."""
     msg = msg_format.serialize_message(self.payload)
 
     for follower in client_state.get_followers():
       try:
         follower_ip = follower.get_ip()
-        sock.sendto(msg.encode(encoding), (follower_ip, port))
-        print(f"Sent to {follower_ip}:{port}")
+        socket.sendto(msg.encode(encoding), (follower_ip, port))
+        client_logger.debug(f"Sent to {follower_ip}:{port}")
       except Exception as e:
-        print(f"Error sending to {follower}: {e}")
+        client_logger.error(f"Error sending to {follower}: {e}")
+    
+    return (ip, port)
 
   @classmethod
   def receive(cls, raw: str) -> "Post":
@@ -79,6 +90,15 @@ class Post(BaseMessage):
     if received.user_id not in following:
       raise ValueError(f"{received.user_id} is not followed by this client")
     return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    display_name = client_state.get_peer_display_name(self.user_id)
+    if display_name != "":
+      return f"{display_name}: {self.content}"
+    return f"{self.user_id}: {self.content}"
+
 
 
 __message__ = Post

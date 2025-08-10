@@ -45,12 +45,6 @@ class Follow(BaseMessage):
     ttl = msg_format.sanitize_ttl(ttl)
     self.token = Token(self.from_user, unix_now + ttl, self.SCOPE)
 
-  def send(self, socket: socket.socket, ip: str, port: int, encoding: str="utf-8"):
-    """Send follow request and update local following list"""
-    msg = msg_format.serialize_message(self.payload)
-    socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
-    client_state.add_following(self.to_user)
-
   @classmethod
   def parse(cls, data: dict) -> "Follow":
     new_obj = cls.__new__(cls)
@@ -69,6 +63,14 @@ class Follow(BaseMessage):
     new_obj.token = Token.parse(data["TOKEN"])
     msg_format.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.from_user)
     return new_obj
+  
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
+    """Send follow request and update local following list"""
+    if ip == "default":
+      ip = self.to_user.get_ip()
+    dest = super().send(socket, ip, port, encoding)
+    client_state.add_following(self.to_user)
+    return dest
 
   @classmethod
   def receive(cls, raw: str) -> "Follow":
@@ -78,5 +80,10 @@ class Follow(BaseMessage):
       raise ValueError("Message is not intended to be received by this client")
     client_state.add_follower(received.from_user)
     return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    return f"User {self.from_user} has followed you"
 
 __message__ = Follow

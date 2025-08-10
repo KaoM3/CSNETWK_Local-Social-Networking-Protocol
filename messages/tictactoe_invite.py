@@ -59,10 +59,16 @@ class TicTacToeInvite(BaseMessage):
         if symbol not in ['X', 'O']:
             raise ValueError("Symbol must be either 'X' or 'O'")
         
+        while True:
+            game_id = f"g{random.randint(0, 255)}"
+            if not game_session_manager.find_game(game_id):
+                break 
+
+
         self.type = self.TYPE
         self.from_user = client_state.get_user_id()
         self.to_user = to
-        self.game_id = f"g{random.randint(0, 255)}"
+        self.game_id = game_id
         self.symbol = symbol
         self.timestamp = Timestamp(unix_now)
         self.message_id = MessageID.generate()
@@ -89,7 +95,6 @@ class TicTacToeInvite(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Sends game invitation to target user and initializes game state"""
-        # Send the invite payload first
 
         game = game_session_manager.find_game(self.game_id)
 
@@ -99,8 +104,7 @@ class TicTacToeInvite(BaseMessage):
                 game_session_manager.assign_players(self.game_id, self.from_user, self.to_user)
             else:
                 game_session_manager.assign_players(self.game_id, self.to_user, self.from_user)
-        
-        #socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
+    
         if ip == "default":
             ip = self.to_user.get_ip()
         return super().send(socket, ip, port, encoding)

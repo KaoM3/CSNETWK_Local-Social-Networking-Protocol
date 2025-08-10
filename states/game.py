@@ -3,6 +3,7 @@ from client_logger import client_logger
 from typing import Dict, Optional
 
 
+
 class GameState:
     """Tracks the state of TicTacToe games and prints the board only."""
 
@@ -109,11 +110,13 @@ class GameSessionManager:
             self._sessions[game_id] = GameState()
             client_logger.info(f"Created new game with ID: {game_id}")
             return self._sessions[game_id]
-
+        
     def find_game(self, game_id: str) -> Optional[GameState]:
-        """Finds an existing game by game_id."""
+        """Finds an existing game by game_id, or returns False if not found."""
         with self._lock:
-            return self._sessions.get(game_id)
+            game = self._sessions.get(game_id)
+            return game if game is not None else False
+
 
     def delete_game(self, game_id: str) -> bool:
         """Deletes a game session."""
@@ -168,6 +171,23 @@ class GameSessionManager:
                 return ",".join(str(pos) for pos in combo)  
 
         return None
+
+    def is_player(self, game_id: str, user_id: str) -> bool:
+        """
+        Return True if the given user_id is assigned to either player slot
+        in the specified game. Raises ValueError if the game doesn't exist 
+        or the user isn't part of it.
+        """
+        # locate game
+        game = self.find_game(game_id)
+        if not game:
+            raise ValueError(f"Game with ID '{game_id}' does not exist.")
+
+        # ensure user is part of the game
+        if str(user_id) not in (game.player_x, game.player_o):
+            raise ValueError(f"User '{user_id}' is not a player in game '{game_id}'.")
+
+        return True
 
 
 # Global instance

@@ -1,4 +1,5 @@
 import re
+from states.game import game_session_manager
 
 def serialize_message(msg: dict) -> str:
   """Serializes `msg` into a string, ready to be encoded and sent over the network"""
@@ -100,12 +101,14 @@ def sanitize_turn(turn: int):
   return turn
 
 
-
-
 def check_game_id(game_id: str) -> str:
     pattern = r"g(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
     if re.fullmatch(pattern, game_id):
-        return game_id
+        if game_session_manager.find_game(game_id):
+            return game_id
+        else:
+            raise ValueError(f"Game ID {game_id} does not exists")
+
     raise ValueError(f"Invalid GAMEID format: {game_id}")
 
 def extract_message_type(msg: str) -> str:

@@ -71,8 +71,7 @@ class TicTacToeMove(BaseMessage):
         if not (0 <= position <= 8):
             raise ValueError("Position must be between 0 and 8")
         
-
-
+        game_session_manager.is_player(game_id, str(to))
         unix_now = int(datetime.now(timezone.utc).timestamp())
         
         self.type = self.TYPE
@@ -91,14 +90,8 @@ class TicTacToeMove(BaseMessage):
         new_obj.type = data["TYPE"] 
         new_obj.from_user = UserID.parse(data["FROM"])
         new_obj.to_user = UserID.parse(data["TO"])
-
-
-    
         new_obj.game_id = msg_format.check_game_id(data["GAMEID"])
-        #for future add a way to check if game_id is valid
-        
         new_obj.position = msg_format.sanitize_position(data["POSITION"])
-
         new_obj.symbol = data["SYMBOL"]
         new_obj.turn = msg_format.sanitize_position(data["TURN"])
 

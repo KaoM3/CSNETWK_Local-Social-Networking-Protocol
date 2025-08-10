@@ -84,11 +84,20 @@ def print_message(msg_obj: BaseMessage):
     client_logger.info(msg_info)
 
 def show_recent_messages():
-  client_logger.info("Recent Messages:")
-  for message in client_state.get_recent_messages():
+  recent_sent = []
+  recent_received = []
+  for message in client_state.get_recent_messages_sent():
     msg_info = message.info(config.VERBOSE)
     if msg_info != "":
-      client_logger.info(msg_info)
+      recent_sent.append(msg_info)
+  for message in client_state.get_recent_messages_received():
+    msg_info = message.info(config.VERBOSE)
+    if msg_info != "":
+      recent_received.append(msg_info)
+  client_logger.info("Recent Messages Sent:")
+  client_logger.info(format_prompt(recent_sent))
+  client_logger.info("Recent Messages received:")
+  client_logger.info(format_prompt(recent_received))
 
 def show_client_details():
   client_logger.info(f"UserID: \"{client_state.get_user_id()}\"!")

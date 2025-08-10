@@ -35,7 +35,7 @@ def get_broadcast_ip(subnet_mask: int):
 
 PING_INTERVAL = 300
 PORT = 50999
-SUBNET_MASK = 24
+SUBNET_MASK = 8
 ENCODING = "utf-8"
 CLIENT_IP = get_ip()
 BROADCAST_IP = get_broadcast_ip(SUBNET_MASK)

@@ -1,3 +1,6 @@
+import re
+from states.game import game_session_manager
+
 def serialize_message(msg: dict) -> str:
   """Serializes `msg` into a string, ready to be encoded and sent over the network"""
   lines = []
@@ -76,7 +79,36 @@ def validate_message(msg: dict, schema: dict):
     if field in msg and "type" in rules:
       if not isinstance(msg[field], rules["type"]):
         raise TypeError(f"Invalid type for {field}: expected {rules['type'].__name__}, got {type(msg[field]).__name__}")
-  
+      
+
+
+def sanitize_position(position: int):
+  try:
+    position = int(position)
+    if position < 0 or position > 8:
+      raise ValueError()
+  except (ValueError, TypeError):
+      raise ValueError("Position must be an integer between 0 and 8")
+  return position
+
+def sanitize_turn(turn: int):
+  try:
+    turn = int(turn)
+    if turn < 0:
+      raise ValueError()
+  except (ValueError, TypeError):
+    raise ValueError(f"{turn}Invalid turn number")
+  return turn
+
+
+def check_game_id(game_id: str) -> str:
+    pattern = r"g(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+    if re.fullmatch(pattern, game_id):
+            return game_id
+
+
+    raise ValueError(f"Invalid GAMEID format: {game_id}")
+
 def extract_message_type(msg: str) -> str:
   type_field = msg.split("\n", 1)[0]
 

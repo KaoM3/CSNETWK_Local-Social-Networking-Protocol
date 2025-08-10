@@ -39,12 +39,14 @@ class FileState:
         if not isinstance(data, FileTransfer):
             raise ValueError(f"{data} is not of type FileTransfer")
 
+    # Depracate
     def accept_file(self, file_id: MessageID):
         with self._lock:
             self._validate_message_id(file_id)
             self._accepted_files.append(file_id)
             client_logger.debug(f"Accepted file transfer with file_id {file_id}")
 
+    # Depracate
     def is_file_accepted(self, file_id: MessageID) -> bool:
         with self._lock:
             self._validate_message_id(file_id)
@@ -57,22 +59,36 @@ class FileState:
             self._pending_transfers[file_id] = file
             client_logger.debug(f"Accepted pending transfer file {file} with file_id {file_id}")
 
-    def add_chunk(self, file_id: MessageID, chunk_index: int, chunk_data: str) -> bool:
+    def add_chunk(self, file_id: MessageID, chunk_index: int, chunk_data: str, total_chunks: int) -> bool:
         """Returns True if file is complete after adding chunk"""
         with self._lock:
             if not isinstance(chunk_index, int):
                 raise ValueError(f"chunk_index {chunk_index} is not of type int")
             if not isinstance(chunk_data, str):
                 raise ValueError(f"chunk_data {chunk_data} is not of type str")
+            if not isinstance(total_chunks, int):
+                raise ValueError(f"total_chunks {total_chunks} is not of type int")
             if file_id not in self._pending_transfers:
                 raise ValueError(f"file_id associated with chunk {chunk_data} missing")
             self._validate_message_id(file_id)
 
             transfer = self._pending_transfers[file_id]
+
+            if transfer.total_chunks != total_chunks:
+                transfer.set_total_chunks(total_chunks)
+
             decoded_data = base64.b64decode(chunk_data)
             transfer.received_chunks[chunk_index] = decoded_data
+            transfer.received_count += 1
 
-            if transfer.total_chunks and len(transfer.received_chunks) == transfer.total_chunks:
+            chunkCount = 0
+            client_logger.warn(f"{transfer.received_count}")
+            for chunk in transfer.received_chunks:
+                if chunk is not None:
+                    chunkCount += 1
+            client_logger.warn(f"chunkcount {chunkCount}")
+            if transfer.received_count == transfer.total_chunks:
+                client_logger.debug("\n\nALL CHUNKS RECEIVED\n\n")
                 self._save_completed_file(file_id)
                 return True
             return False
@@ -83,7 +99,10 @@ class FileState:
         # Combine chunks in order
         complete_data = b""
         for i in range(transfer.total_chunks):
-            complete_data += transfer.received_chunks[i]
+            chunk = transfer.received_chunks[i]
+            if chunk is None:
+                raise ValueError(f"Chunk at index {i} is missing or None.")
+            complete_data += chunk
 
         # Save to file
         filepath = os.path.join(self._files_dir, transfer.filename)

@@ -10,6 +10,7 @@ import interface
 import traceback
 from states.client_state import client_state
 from client_logger import client_logger
+from queue import Queue
 
 UNICAST_SOCKET = None
 BROADCAST_SOCKET = None
@@ -29,23 +30,37 @@ def initialize_sockets(port):
   BROADCAST_SOCKET.bind(('0.0.0.0', port))
 
 def run_threads():
-  # Concurrent Thread for receiving unicast messages
+  recv_queue = Queue()
+
+  # Thread: socket listener, only receives and puts into queue
   def unicast_receive_loop():
     client_logger.debug("INIT THREAD: unicast_receive_loop()")
     while True:
       data, address = UNICAST_SOCKET.recvfrom(config.BUFSIZE)
-      client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
-      received_msg = router.recv_message(data, address)
-      if received_msg is not None:
-        client_state.add_recent_message(received_msg)
-        interface.print_message(received_msg)
+      recv_queue.put((data, address))
+
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
+
+  # Thread: message processor, consumes from queue and processes messages
+  def unicast_process_loop():
+    client_logger.debug("INIT THREAD: unicast_process_loop()")
+    while True:
+      data, address = recv_queue.get()  # blocks until item available
+      try:
+        received_msg = router.recv_message(data, address)
+        if received_msg is not None:
+          client_state.add_recent_message(received_msg)
+          interface.print_message(received_msg)
+      except Exception as e:
+          client_logger.error(f"Error processing message from {address}:\n{e}")
+
+  threading.Thread(target=unicast_process_loop, daemon=True).start()
   
   def broadcast_receive_loop():
     client_logger.debug("INIT THREAD: broadcast_receive_loop()")
     while True:
       data, address = BROADCAST_SOCKET.recvfrom(config.BUFSIZE)
-      client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
+      #client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         client_state.add_recent_message(received_msg)

@@ -4,7 +4,13 @@ class FileTransfer:
     self.filesize = filesize
     self.filetype = filetype
     self.total_chunks = total_chunks
-    self.received_chunks = []
+    self.received_chunks = [None] * total_chunks
+    self.received_count = 0
+    self._validate()
+
+  def set_total_chunks(self, total_chunks: int):
+    self.total_chunks = total_chunks
+    self.received_chunks = [None] * self.total_chunks
     self._validate()
 
   def _validate(self):

@@ -9,8 +9,11 @@ import socket
 from client_logger import client_logger
 from states.file_state import file_state
 from messages.ack import Ack
+from messages.file_chunk import FileChunk
 import time
+import math
 import config
+import client
 
 class FileOffer(BaseMessage):
     TYPE = "FILE_OFFER"
@@ -45,7 +48,7 @@ class FileOffer(BaseMessage):
         }
         return payload
 
-    def __init__(self, to: UserID, filepath: str, description: str = " ", ttl: TTL = 3600):
+    def __init__(self, to: UserID, filepath: str, description: str = " ", chunk_size: int = 256, ttl: TTL = 3600):
         unix_now = int(datetime.now(timezone.utc).timestamp())
         self.type = self.TYPE
         self.from_user = client_state.get_user_id()
@@ -57,9 +60,12 @@ class FileOffer(BaseMessage):
             client_logger.debug(f"{filepath}:\nfilename: {filename}\nfilesize: {filesize}\nfiletype: {filetype}")
         except:
             raise ValueError("Filepath is invalid")
+        self.filepath = filepath # hidden, not in payload
+        self.chunk_size = int(chunk_size)
         self.filename = filename
         self.filesize = filesize
         self.filetype = filetype
+        self.total_chunks = math.ceil(self.filesize / self.chunk_size)
         self.fileid = MessageID.generate()
         if description == " ":
             self.description = ""
@@ -81,6 +87,7 @@ class FileOffer(BaseMessage):
         new_obj.description = data.get("DESCRIPTION", "")
         new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
         new_obj.token = Token.parse(data["TOKEN"])
+        new_obj.filepath = None
         
         Token.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.from_user)
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
@@ -103,20 +110,26 @@ class FileOffer(BaseMessage):
             # Check for ACK
             if client_state.get_ack_message(self.fileid) is not None:
                 client_logger.debug(f"Received ACK for file {self.fileid}")
-                return dest
+                break
 
             retries += 1
+        if dest[0] == "failed":
+            client_logger.warn(f"No ACK received for file {self.fileid} after {retries} attempts.")
+            return dest
 
-        client_logger.warn(f"No ACK received for file {self.fileid} after {retries} attempts.")
-        return dest
+        client.initialize_sockets(config.PORT)
+        for i, chunk in enumerate(chunk_file(self.filepath, self.chunk_size)):
+            chunk_msg = FileChunk(self.to_user, self.fileid, i, self.total_chunks, self.chunk_size, self.token, chunk)
+            chunk_msg.send(client.get_unicast_socket())
+            client_logger.info(f"Sent chunk {i+1}/{self.total_chunks}")
+            client_logger.send(f"{chunk_msg.payload}")
 
     @classmethod
     def receive(cls, raw: str) -> "FileOffer":
         received = cls.parse(msg_format.deserialize_message(raw))
         if received.to_user != client_state.get_user_id():
             raise ValueError("Message is not intended to be received by this client")
-        
-        import client
+    
         client.initialize_sockets(config.PORT)
         ack = Ack(message_id=received.fileid)
         ack.send(socket=client.get_unicast_socket(), ip=received.from_user.get_ip(), port=config.PORT)
@@ -126,7 +139,8 @@ class FileOffer(BaseMessage):
         if response == 'y':
             new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
             file_state.add_pending_transfer(received.fileid, new_transfer)
-            
+            file_state.accept_file(received.fileid)
+
         return received
 
     def info(self, verbose: bool = False) -> str:

@@ -2,8 +2,11 @@ from datetime import datetime, timezone
 from custom_types.fields import UserID, Token, Timestamp, TTL, MessageID
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from utils.file_transfer import chunk_file, get_file_info
 from utils import msg_format
 import socket
+from client_logger import client_logger
+from states.file_state import file_state
 
 class FileOffer(BaseMessage):
     TYPE = "FILE_OFFER"
@@ -32,18 +35,23 @@ class FileOffer(BaseMessage):
             "FILESIZE": self.filesize,
             "FILETYPE": self.filetype,
             "FILEID": self.fileid,
+            "DESCRIPTION": self.description,
             "TIMESTAMP": self.timestamp,
             "TOKEN": self.token
         }
-        if self.description:
-            payload["DESCRIPTION"] = self.description
         return payload
 
-    def __init__(self, to: UserID, filename: str, filesize: int, filetype: str, description: str = "", ttl: TTL = 3600):
+    def __init__(self, to: UserID, filepath: str, description: str = "", ttl: TTL = 3600):
+        client_logger.debug("INIT FILE OFFER")
         unix_now = int(datetime.now(timezone.utc).timestamp())
         self.type = self.TYPE
         self.from_user = client_state.get_user_id()
         self.to_user = to
+        # Get file info
+        try:
+            filename, filesize, filetype = get_file_info(filepath)
+        except:
+            raise ValueError("Filepath is invalid")
         self.filename = filename
         self.filesize = filesize
         self.filetype = filetype
@@ -71,6 +79,8 @@ class FileOffer(BaseMessage):
         return new_obj
 
     def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
+        file_state.add_pending_transfer(self, self.fileid, self.filename, self.total)
+        
         if ip == "default":
             ip = self.to_user.get_ip()
         return super().send(socket, ip, port, encoding)
@@ -82,10 +92,8 @@ class FileOffer(BaseMessage):
             raise ValueError("Message is not intended to be received by this client")
         
         # Ask user if they want to accept
-        from client_logger import client_logger
         response = client_logger.input("Accept file? (y/n): ").lower()
         if response == 'y':
-            from states.file_state import file_state
             file_state.accept_file(received.fileid)
             file_state.add_pending_transfer(
                 received.fileid,

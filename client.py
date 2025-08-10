@@ -33,7 +33,7 @@ def run_threads():
   def unicast_receive_loop():
     client_logger.debug("INIT THREAD: unicast_receive_loop()")
     while True:
-      data, address = UNICAST_SOCKET.recvfrom(1024)
+      data, address = UNICAST_SOCKET.recvfrom(config.BUFSIZE)
       client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
@@ -44,7 +44,7 @@ def run_threads():
   def broadcast_receive_loop():
     client_logger.debug("INIT THREAD: broadcast_receive_loop()")
     while True:
-      data, address = BROADCAST_SOCKET.recvfrom(1024)
+      data, address = BROADCAST_SOCKET.recvfrom(config.BUFSIZE)
       client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
@@ -96,7 +96,6 @@ def main():
 
   # Initialize router
   router.load_messages(config.MESSAGES_DIR)
-  router.load_messages(f"{config.MESSAGES_DIR}.file")
 
   # Set client UserID
   client_state.set_user_id(interface.get_user_id())

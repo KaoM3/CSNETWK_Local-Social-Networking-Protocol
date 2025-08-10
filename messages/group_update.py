@@ -112,15 +112,34 @@ class GroupUpdate(BaseMessage):
 
         # --- Remove members ---
         if hasattr(received, "remove") and received.remove:
-            remove_members = msg_format.string_to_list(received.remove)
-            for member in remove_members:
+            remove_members_strs = msg_format.string_to_list(received.remove)  # handles commas/whitespace
+            current_user = client_state.get_user_id()
+            group_id = received.group_id
+
+            # Track if we removed the current user
+            removed_self = False
+
+            for m_str in remove_members_strs:
                 try:
-                    client_state.remove_group_member(received.group_id, UserID.parse(member))
-                    if member == client_state.get_user_id():
-                        client_state.remove_group(received.group_id)
+                    uid = UserID.parse(m_str)  # ensure same type for comparisons
+                    client_state.remove_group_member(group_id, uid)
+                    if uid == current_user:
+                        removed_self = True
                 except ValueError as e:
-                    client_logger.error(f"Error removing member {member} from group {received.group_id}: {str(e)}")
+                    client_logger.error(f"Error removing member {m_str} from group {group_id}: {e}")
+
+            # If we (the current user) were removed, drop the whole group locally
+            if removed_self:
+                client_state.remove_group(group_id)
+                return received
+
+            # Otherwise, if the group is now empty, remove it
+            grp = client_state.get_group(group_id)  # see helper below
+            if grp is not None and not grp.get("members"):
+                client_state.remove_group(group_id)
+
         return received
+
 
 
 

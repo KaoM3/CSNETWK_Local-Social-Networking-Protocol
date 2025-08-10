@@ -24,6 +24,7 @@ class ClientState:
     self._followers = []
     self._following = []
     self._groups = {}  # Dictionary of {group_id: {"name": group_name, "members": [members]}}
+    self._group_ids = []  # List of group IDs
     self._recent_messages_received = []
     self._recent_messages_sent = []
     self._revoked_tokens = []
@@ -203,31 +204,19 @@ class ClientState:
   #group helpers
   def create_group(self, group_id: str, group_name: str, members: list[UserID] = None):
     with self._lock:
-      if members is None:
-        members = []
-      for member in members:
-        self._validate_user_id(member)
-      if group_id not in self._groups:
-        self._groups[group_id] = {
-          "name": group_name,
-          "members": members
-        }
-        client_logger.debug(f"Created group: {group_id} ({group_name}) with members: {members}")
-
-  def update_group(self, group_id: str, group_name: str = None, members: list[UserID] = None):
-    with self._lock:
-      if group_id not in self._groups:
-        raise ValueError(f"Group {group_id} does not exist")
-      
-      if group_name is not None:
-        self._groups[group_id]["name"] = group_name
-      
-      if members is not None:
+        if members is None:
+            members = []
         for member in members:
-          self._validate_user_id(member)
-        self._groups[group_id]["members"] = members
-      
-      client_logger.debug(f"Updated group: {group_id}")
+            self._validate_user_id(member)
+        if group_id not in self._group_ids:
+            self._groups[group_id] = {
+                "name": group_name,
+                "members": members
+            }
+            # Add group_id if not already present
+            if group_id not in self._group_ids:
+                self._group_ids.append(group_id)
+            client_logger.debug(f"Created group: {group_id} ({group_name}) with members: {members}")
 
   def remove_group(self, group_id: str):
     with self._lock:
@@ -242,6 +231,10 @@ class ClientState:
   def get_all_groups(self) -> dict:
     with self._lock:
       return self._groups.copy()
+    
+  def get_group_ids(self) -> list[str]:
+    with self._lock:
+      return self._group_ids.copy()
 
   def add_group_member(self, group_id: str, member: UserID):
     with self._lock:

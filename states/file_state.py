@@ -82,11 +82,10 @@ class FileState:
             transfer.received_count += 1
 
             chunkCount = 0
-            client_logger.warn(f"{transfer.received_count}")
+            client_logger.info(f"Chunks received: {transfer.received_count}")
             for chunk in transfer.received_chunks:
                 if chunk is not None:
                     chunkCount += 1
-            client_logger.warn(f"chunkcount {chunkCount}")
             if transfer.received_count == transfer.total_chunks:
                 client_logger.debug("\n\nALL CHUNKS RECEIVED\n\n")
                 self._save_completed_file(file_id)

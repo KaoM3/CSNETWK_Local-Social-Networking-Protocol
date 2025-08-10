@@ -116,6 +116,7 @@ class GroupUpdate(BaseMessage):
             for member in remove_members:
                 try:
                     client_state.remove_group_member(received.group_id, UserID.parse(member))
+                    client_state.remove_group(received.group_id)
                 except ValueError as e:
                     client_logger.error(f"Error removing member {member} from group {received.group_id}: {str(e)}")
         return received
@@ -124,9 +125,10 @@ class GroupUpdate(BaseMessage):
     def info(self, verbose: bool = False) -> str:
         if verbose:
             return f"{self.payload}"
-        member_count = len(msg_format.string_to_list(self.members))
-
-        return f"{self.from_user} created group '{self.group_id}' with {member_count} members"
+        display_name = client_state.get_peer_display_name(self.from_user)
+        if display_name != "":
+            return f"{display_name} sent \"{self.content}\""
+        return f"{self.from_user} sent \"{self.content}\""
 
 
 

@@ -56,7 +56,7 @@ class GroupCreate(BaseMessage):
             member_ids.append(current_user)
         # Create the group in client state
         client_state.create_group(group_id, group_name, member_ids)
-
+        
         self.type = self.TYPE
         self.from_user = current_user
         self.group_id = group_id
@@ -83,12 +83,6 @@ class GroupCreate(BaseMessage):
         return new_obj
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
-        # Check if group ID already exists
-        existing_group = client_state.get_group(self.group_id)
-        if existing_group:
-            client_logger.error(f"Cannot create group: Group ID '{self.group_id}' already exists")
-            return (ip, port)
-
         msg = msg_format.serialize_message(self.payload)
         # Group create messages should be sent to all peers
         for peer in client_state.get_peers():
@@ -109,11 +103,11 @@ class GroupCreate(BaseMessage):
         # When receiving a group create message, add the group to client state
         group_members = msg_format.string_to_list(received.members)
         member_ids = [UserID.parse(member) for member in group_members]
-
+        
         # Always store the group information in client state
         client_state.create_group(received.group_id, received.group_name, member_ids)
         client_logger.debug(f"Stored group in client state: {received.group_id} ({received.group_name}) with members: {member_ids}")
-
+        
         return received
 
     def info(self, verbose: bool = False) -> str:

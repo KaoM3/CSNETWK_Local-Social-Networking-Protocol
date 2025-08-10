@@ -64,41 +64,75 @@ class GroupUpdate(BaseMessage):
         return new_obj
 
 
-    def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
+    def send(self, sock: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         msg = msg_format.serialize_message(self.payload)
-        # Group create messages should be sent to all peers
 
-        #for each id in add and remove:
-        #group_members = msg_format.string_to_list(self.add)
-        #for add_user in group_members:
-           # add_group_member(self.group_id: str, add_user):
-
-        #sane wtg remove
-
-        for peer in client_state.get_peers():
-            #if peer != self.from_user:  # Don't send to self
+        # --- Add new members ---
+        if hasattr(self, "add") and self.add:
+            group_members = msg_format.string_to_list(self.add)
+            for add_user in group_members:
                 try:
-                    # Extract IP address from UserID (format is username@ip)
-                    peer_ip = str(peer).split('@')[1]
-                    socket.sendto(msg.encode(encoding), (peer_ip, port))
-                    client_logger.debug(f"Sent group create message to peer {peer} at {peer_ip}:{port}")
-                except Exception as e:
-                    client_logger.error(f"Error sending to {peer} ({str(e)})")
+                    client_state.add_group_member(self.group_id, UserID.parse(add_user))
+                except ValueError as e:
+                    client_logger.error(f"Error adding member {add_user} to group {self.group_id}: {str(e)}")
+
+        # --- Remove members ---
+        if hasattr(self, "remove") and self.remove:
+            remove_members = msg_format.string_to_list(self.remove)
+            for rem_user in remove_members:
+                try:
+                    client_state.remove_group_member(self.group_id, UserID.parse(rem_user))
+                except ValueError as e:
+                    client_logger.error(f"Error removing member {rem_user} from group {self.group_id}: {str(e)}")
+
+        # --- Send to all peers ---
+        for peer in client_state.get_peers():
+            try:
+                peer_ip = str(peer).split('@')[1]
+                sock.sendto(msg.encode(encoding), (peer_ip, port))
+                client_logger.debug(f"Sent group update message to peer {peer} at {peer_ip}:{port}")
+            except Exception as e:
+                client_logger.error(f"Error sending to {peer} ({str(e)})")
+
         return (ip, port)
 
 
     @classmethod
     def receive(cls, raw: str) -> "GroupUpdate":
         received = cls.parse(msg_format.deserialize_message(raw))
-        # When receiving a group create message, add the group to client state
-        group_members = msg_format.string_to_list(received.members)
-        member_ids = [UserID.parse(member) for member in group_members]
-        
-        # Always store the group information in client state
-        client_state.create_group(received.group_id, received.group_name, member_ids)
-        client_logger.debug(f"Stored group in client state: {received.group_id} ({received.group_name}) with members: {member_ids}")
-        
+
+        # Ensure group exists
+        if received.group_id not in client_state._groups:
+            client_state._groups[received.group_id] = {
+                "name": received.group_name,
+                "members": []
+            }
+
+        # --- Add members ---
+        if hasattr(received, "add") and received.add:
+            group_members = msg_format.string_to_list(received.add)
+            for member in group_members:
+                try:
+                    client_state.add_group_member(received.group_id, UserID.parse(member))
+                except ValueError as e:
+                    client_logger.error(f"Error adding member {member} to group {received.group_id}: {str(e)}")
+
+        # --- Remove members ---
+        if hasattr(received, "remove") and received.remove:
+            remove_members = msg_format.string_to_list(received.remove)
+            for member in remove_members:
+                try:
+                    client_state.remove_group_member(received.group_id, UserID.parse(member))
+                except ValueError as e:
+                    client_logger.error(f"Error removing member {member} from group {received.group_id}: {str(e)}")
+
+        client_logger.debug(
+            f"Updated group in client state: {received.group_id} "
+            f"({received.group_name}) with members: {client_state._groups[received.group_id]['members']}"
+        )
+
         return received
+
 
     def info(self, verbose: bool = False) -> str:
         if verbose:

@@ -8,12 +8,14 @@ class GameState:
     """Tracks the state of TicTacToe games and prints the board only."""
 
     def __init__(self):
+        self.active = False
         self.board = [' '] * 9
         self.last_symbol: Optional[str] = None  
         self.turn = 1  
         self.player_x: Optional[str] = None
         self.player_o: Optional[str] = None
         self.starting_symbol: str = "X"  # X always starts unless changed
+        
 
 
     def get_board_string(self) -> str:
@@ -103,13 +105,18 @@ class GameSessionManager:
         return None
 
     def create_game(self, game_id: str) -> GameState:
-        """Creates a new game session with the given game_id."""
+        """Creates a new game session with the given game_id and marks it active."""
         with self._lock:
             if game_id in self._sessions:
                 raise ValueError(f"Game with ID '{game_id}' already exists.")
-            self._sessions[game_id] = GameState()
-            client_logger.info(f"Created new game with ID: {game_id}")
-            return self._sessions[game_id]
+            
+            game = GameState()
+            game.active = True  # Mark game as active immediately
+            
+            self._sessions[game_id] = game
+            client_logger.info(f"Created new game with ID: {game_id} (active)")
+            return game
+
         
     def find_game(self, game_id: str) -> Optional[GameState]:
         """Finds an existing game by game_id, or returns False if not found."""
@@ -127,10 +134,22 @@ class GameSessionManager:
                 return True
             return False
 
-    def list_game_ids(self) -> list:
-        """Returns a list of all active game IDs."""
-        with self._lock:
-            return list(self._sessions.keys())
+    def is_active_game(self, game_id: str) -> bool:
+        """
+        Raises ValueError if the game doesn't exist or is not active.
+        Returns None otherwise.
+        """
+        game = self.find_game(game_id)
+        if not game:
+            raise ValueError(f"Game with ID '{game_id}' does not exist.")
+
+        if not getattr(game, "active", False):
+            raise ValueError(f"Game with ID '{game_id}' is not active.")
+
+        return True
+
+
+
         
     def is_winning_move(self, game_id: str) -> bool:
         """Check if the last move results in a win."""
@@ -178,13 +197,11 @@ class GameSessionManager:
         in the specified game. Raises ValueError if the game doesn't exist 
         or the user isn't part of it.
         """
-        # locate game
         game = self.find_game(game_id)
         if not game:
             raise ValueError(f"Game with ID '{game_id}' does not exist.")
 
-        # ensure user is part of the game
-        if str(user_id) not in (game.player_x, game.player_o):
+        if user_id not in (game.player_x, game.player_o):
             raise ValueError(f"User '{user_id}' is not a player in game '{game_id}'.")
 
         return True

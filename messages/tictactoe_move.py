@@ -61,8 +61,9 @@ class TicTacToeMove(BaseMessage):
             turn: Turn number in the game
             ttl: Time to live in seconds (default 3600)
         """
-        
-        game_turn = game_session_manager.get_turn(game_id) 
+
+         
+
         try:
             position = int(position)
         except (TypeError, ValueError):
@@ -71,7 +72,13 @@ class TicTacToeMove(BaseMessage):
         if not (0 <= position <= 8):
             raise ValueError("Position must be between 0 and 8")
         
-        game_session_manager.is_player(game_id, str(to))
+        active = game_session_manager.is_active_game(game_id)
+        if not active:
+            raise ValueError(f"Game {game_id} is not currently active")
+        else:
+            game_turn = game_session_manager.get_turn(game_id)
+
+        game_session_manager.is_player(game_id, to)
         unix_now = int(datetime.now(timezone.utc).timestamp())
         
         self.type = self.TYPE
@@ -89,11 +96,13 @@ class TicTacToeMove(BaseMessage):
         new_obj = cls.__new__(cls)
         new_obj.type = data["TYPE"] 
         new_obj.from_user = UserID.parse(data["FROM"])
+        game_session_manager.is_player(data["GAMEID"], data["TO"])
         new_obj.to_user = UserID.parse(data["TO"])
+
         new_obj.game_id = msg_format.check_game_id(data["GAMEID"])
         new_obj.position = msg_format.sanitize_position(data["POSITION"])
         new_obj.symbol = data["SYMBOL"]
-        new_obj.turn = msg_format.sanitize_position(data["TURN"])
+        new_obj.turn = msg_format.sanitize_turn(data["TURN"])
 
         new_obj.message_id = MessageID.parse(data["MESSAGE_ID"]) 
         new_obj.token = Token.parse(data["TOKEN"])

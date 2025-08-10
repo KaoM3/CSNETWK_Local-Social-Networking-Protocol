@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Directory of received files
+received_files/
+
 # Distribution / packaging
 .Python
 build/

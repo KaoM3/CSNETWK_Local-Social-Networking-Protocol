@@ -42,4 +42,4 @@ BROADCAST_IP = get_broadcast_ip(SUBNET_MASK)
 VERBOSE = False
 DEFAULT_TTL = 300
 MESSAGES_DIR = "messages"
-
+BUFSIZE = 2048

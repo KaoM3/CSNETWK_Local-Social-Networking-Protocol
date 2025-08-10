@@ -124,7 +124,7 @@ def main():
         sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg_args, dest_ip, config.PORT)
         if sent_msg is not None:
           client_state.add_recent_message(sent_msg)
-      except Exception as e:
+      except Exception:
         client_logger.error("An error occurred:\n" + traceback.format_exc())
     elif user_input is None:
       break

@@ -24,6 +24,7 @@ class ClientState:
     self._followers = []
     self._following = []
     self._recent_messages = []
+    self._revoked_tokens = []
 
   def _validate_user_id(self, data):
     if not isinstance(data, UserID):
@@ -149,8 +150,12 @@ class ClientState:
     
   def add_recent_message(self, message: BaseMessage):
     with self._lock:
-      self._validate_base_message(message)
-      self._recent_messages.append(message)
+      msg_token = getattr(message, "token", None)
+      if msg_token is None or msg_token not in self._revoked_tokens:
+        self._validate_base_message(message)
+        self._recent_messages.append(message)
+      else:
+        client_logger.debug("Received message token is revoked.")
 
   def get_recent_messages(self) -> list:
     self.cleanup_expired_messages()
@@ -167,7 +172,11 @@ class ClientState:
           valid_messages.append(msg)
           continue
         client_logger.debug(f"REVOKE: Invalidating message: {msg}")
+        self._revoked_tokens.append(revoked_token)
       self._recent_messages = valid_messages
 
+  def get_revoked_tokens(self) -> list[Token]:
+    with self._lock:
+      return self._revoked_tokens
 
 client_state = ClientState()

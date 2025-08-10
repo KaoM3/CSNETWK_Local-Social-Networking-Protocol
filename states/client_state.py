@@ -23,7 +23,7 @@ class ClientState:
     self._peer_display_names = {}
     self._followers = []
     self._following = []
-    self._group_members = []
+    self._groups = {}  # Dictionary of {group_id: {"name": group_name, "members": [members]}}
     self._recent_messages_received = []
     self._recent_messages_sent = []
     self._revoked_tokens = []
@@ -140,12 +140,74 @@ class ClientState:
         self._following.append(target)
         client_logger.debug(f"Added following: {target}")
 
-  def add_group_member(self, member: UserID):
+  def create_group(self, group_id: str, group_name: str, members: list[UserID] = None):
+    with self._lock:
+      if members is None:
+        members = []
+      for member in members:
+        self._validate_user_id(member)
+      if group_id not in self._groups:
+        self._groups[group_id] = {
+          "name": group_name,
+          "members": members
+        }
+        client_logger.debug(f"Created group: {group_id} ({group_name}) with members: {members}")
+
+  def update_group(self, group_id: str, group_name: str = None, members: list[UserID] = None):
+    with self._lock:
+      if group_id not in self._groups:
+        raise ValueError(f"Group {group_id} does not exist")
+      
+      if group_name is not None:
+        self._groups[group_id]["name"] = group_name
+      
+      if members is not None:
+        for member in members:
+          self._validate_user_id(member)
+        self._groups[group_id]["members"] = members
+      
+      client_logger.debug(f"Updated group: {group_id}")
+
+  def remove_group(self, group_id: str):
+    with self._lock:
+      if group_id in self._groups:
+        del self._groups[group_id]
+        client_logger.debug(f"Removed group: {group_id}")
+
+  def get_group(self, group_id: str) -> dict:
+    with self._lock:
+      return self._groups.get(group_id, None)
+
+  def get_all_groups(self) -> dict:
+    with self._lock:
+      return self._groups.copy()
+
+  def add_group_member(self, group_id: str, member: UserID):
     with self._lock:
       self._validate_user_id(member)
-      if member not in self._group_members:
-        self._group_members.append(member)
-        client_logger.debug(f"Added group member: {member}")
+      if group_id not in self._groups:
+        raise ValueError(f"Group {group_id} does not exist")
+      
+      if member not in self._groups[group_id]["members"]:
+        self._groups[group_id]["members"].append(member)
+        client_logger.debug(f"Added member {member} to group: {group_id}")
+
+  def remove_group_member(self, group_id: str, member: UserID):
+    with self._lock:
+      self._validate_user_id(member)
+      if group_id not in self._groups:
+        raise ValueError(f"Group {group_id} does not exist")
+      
+      if member in self._groups[group_id]["members"]:
+        self._groups[group_id]["members"].remove(member)
+        client_logger.debug(f"Removed member {member} from group: {group_id}")
+
+  def is_group_member(self, group_id: str, member: UserID) -> bool:
+    with self._lock:
+      self._validate_user_id(member)
+      if group_id not in self._groups:
+        return False
+      return member in self._groups[group_id]["members"]
 
   def remove_following(self, target: UserID):
     with self._lock:

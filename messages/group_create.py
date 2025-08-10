@@ -46,13 +46,19 @@ class GroupCreate(BaseMessage):
         """
         members: comma-separated string of user IDs
         """
-
         unix_now = int(datetime.now(timezone.utc).timestamp())
         group_members = msg_format.string_to_list(members)  # Convert to list of UserID objects
-        for member in group_members:
-            client_state.add_group_member(UserID.parse(member))
+        # Convert members to UserID objects
+        member_ids = [UserID.parse(member) for member in group_members]
+        # Add current user to the group members if not already included
+        current_user = client_state.get_user_id()
+        if current_user not in member_ids:
+            member_ids.append(current_user)
+        # Create the group in client state
+        client_state.create_group(group_id, group_name, member_ids)
+        
         self.type = self.TYPE
-        self.from_user = client_state.get_user_id()
+        self.from_user = current_user
         self.group_id = group_id
         self.group_name = group_name
         # Convert comma-separated string into a list of UserID objects
@@ -78,28 +84,40 @@ class GroupCreate(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         msg = msg_format.serialize_message(self.payload)
-        for member in client_state.get_group_members():
-            print(f"  {member}")
-            try:
-                socket.sendto(msg.encode(encoding), (member, port))
-                client_logger.debug(f"Sent to {member}:{port}")
-            except Exception as e:
-                client_logger.error(f"Error sending to {member}: {e}")
+        # Group create messages should be sent to all peers
+        for peer in client_state.get_peers():
+            #if peer != self.from_user:  # Don't send to self
+                try:
+                    # Extract IP address from UserID (format is username@ip)
+                    peer_ip = str(peer).split('@')[1]
+                    socket.sendto(msg.encode(encoding), (peer_ip, port))
+                    client_logger.debug(f"Sent group create message to peer {peer} at {peer_ip}:{port}")
+                except Exception as e:
+                    client_logger.error(f"Error sending to {peer} ({str(e)})")
         return (ip, port)
 
 
     @classmethod
     def receive(cls, raw: str) -> "GroupCreate":
         received = cls.parse(msg_format.deserialize_message(raw))
+        # When receiving a group create message, add the group to client state
+        group_members = msg_format.string_to_list(received.members)
+        member_ids = [UserID.parse(member) for member in group_members]
+        
+        # Always store the group information in client state
+        client_state.create_group(received.group_id, received.group_name, member_ids)
+        client_logger.debug(f"Stored group in client state: {received.group_id} ({received.group_name}) with members: {member_ids}")
+        
         return received
 
     def info(self, verbose: bool = False) -> str:
         if verbose:
             return f"{self.payload}"
         display_name = client_state.get_peer_display_name(self.from_user)
+        member_count = len(msg_format.string_to_list(self.members))
         if display_name != "":
-            return f"{display_name}: {self.content}"
-        return f"{self.from_user}: {self.content}"
+            return f"{display_name} created group '{self.group_name}' with {member_count} members"
+        return f"{self.from_user} created group '{self.group_name}' with {member_count} members"
 
 
 __message__ = GroupCreate

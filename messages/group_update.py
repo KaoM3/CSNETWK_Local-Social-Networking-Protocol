@@ -101,13 +101,6 @@ class GroupUpdate(BaseMessage):
     def receive(cls, raw: str) -> "GroupUpdate":
         received = cls.parse(msg_format.deserialize_message(raw))
 
-        # Ensure group exists
-        if received.group_id not in client_state._groups:
-            client_state._groups[received.group_id] = {
-                "name": received.group_name,
-                "members": []
-            }
-
         # --- Add members ---
         if hasattr(received, "add") and received.add:
             group_members = msg_format.string_to_list(received.add)
@@ -125,23 +118,15 @@ class GroupUpdate(BaseMessage):
                     client_state.remove_group_member(received.group_id, UserID.parse(member))
                 except ValueError as e:
                     client_logger.error(f"Error removing member {member} from group {received.group_id}: {str(e)}")
-
-        client_logger.debug(
-            f"Updated group in client state: {received.group_id} "
-            f"({received.group_name}) with members: {client_state._groups[received.group_id]['members']}"
-        )
-
         return received
 
 
     def info(self, verbose: bool = False) -> str:
         if verbose:
             return f"{self.payload}"
-        display_name = client_state.get_peer_display_name(self.from_user)
         member_count = len(msg_format.string_to_list(self.members))
-        if display_name != "":
-            return f"{display_name} created group '{self.group_name}' with {member_count} members"
-        return f"{self.from_user} created group '{self.group_name}' with {member_count} members"
+
+        return f"{self.from_user} created group '{self.group_id}' with {member_count} members"
 
 
 

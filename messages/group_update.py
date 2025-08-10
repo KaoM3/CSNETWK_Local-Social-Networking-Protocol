@@ -116,10 +116,12 @@ class GroupUpdate(BaseMessage):
             for member in remove_members:
                 try:
                     client_state.remove_group_member(received.group_id, UserID.parse(member))
-                    client_state.remove_group(received.group_id)
+                    if member == client_state.get_user_id():
+                        client_state.remove_group(received.group_id)
                 except ValueError as e:
                     client_logger.error(f"Error removing member {member} from group {received.group_id}: {str(e)}")
         return received
+
 
 
     def info(self, verbose: bool = False) -> str:

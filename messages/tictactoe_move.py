@@ -122,7 +122,7 @@ class TicTacToeMove(BaseMessage):
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Sends game move to other player and updates game state"""
         msg = msg_format.serialize_message(self.payload)
-        socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
+
 
         game = game_session_manager.find_game(self.game_id)
 
@@ -131,6 +131,7 @@ class TicTacToeMove(BaseMessage):
 
         game.move(self.position, self.symbol)
         game.print_board()
+        
 
         if game_session_manager.is_winning_move(self.game_id):
             winning_line = game_session_manager.find_winning_line(self.game_id)
@@ -148,6 +149,9 @@ class TicTacToeMove(BaseMessage):
 
         print(f"Move sent to {self.to_user} at position {self.position}")
 
+        if ip == "default":
+            ip = self.to_user.get_ip()
+        return super().send(socket, ip, port, encoding)
 
      
     @classmethod

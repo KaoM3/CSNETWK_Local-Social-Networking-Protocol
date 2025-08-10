@@ -98,13 +98,16 @@ class TicTacToeInvite(BaseMessage):
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Sends game invitation to target user and initializes game state"""
         # Send the invite payload first
-        msg = msg_format.serialize_message(self.payload)
+
         game = game_session_manager.find_game(self.game_id)
 
         if not game:
             game_session_manager.create_game(self.game_id)
 
-        socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
+        #socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
+        if ip == "default":
+            ip = self.to_user.get_ip()
+        return super().send(socket, ip, port, encoding)
 
 
     @classmethod

@@ -1,5 +1,5 @@
 import threading
-import log
+from client_logger import client_logger
 from typing import Dict, Optional
 from custom_types.user_id import UserID
 
@@ -37,7 +37,7 @@ class GameState:
         self.board[position] = symbol
         self.last_symbol = symbol  # ✅ Save the last move symbol
         self.turn += 1
-        log.info(f"Player {symbol} moved to position {position}")
+        client_logger.info(f"Player {symbol} moved to position {position}")
 
 
 class GameSessionManager:
@@ -58,7 +58,7 @@ class GameSessionManager:
             if game_id in self._sessions:
                 raise ValueError(f"Game with ID '{game_id}' already exists.")
             self._sessions[game_id] = GameState()
-            log.info(f"Created new game with ID: {game_id}")
+            client_logger.info(f"Created new game with ID: {game_id}")
             return self._sessions[game_id]
 
     def find_game(self, game_id: str) -> Optional[GameState]:
@@ -71,7 +71,7 @@ class GameSessionManager:
         with self._lock:
             if game_id in self._sessions:
                 del self._sessions[game_id]
-                log.info(f"Deleted game with ID: {game_id}")
+                client_logger.info(f"Deleted game with ID: {game_id}")
                 return True
             return False
 

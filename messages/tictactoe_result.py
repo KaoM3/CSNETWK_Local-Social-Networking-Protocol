@@ -110,8 +110,12 @@ class TicTacToeResult(BaseMessage):
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Send game result to other player."""
         msg = msg_format.serialize_message(self.payload)
-        socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
+
         print(f"Result sent to {self.to_user}: {self.result}")
+
+        if ip == "default":
+            ip = self.to_user.get_ip()
+        return super().send(socket, ip, port, encoding)
 
     @classmethod
     def receive(cls, raw: str) -> "TicTacToeResult":

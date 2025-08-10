@@ -108,6 +108,7 @@ def show_client_details():
   client_logger.info(f"Peer display names: {client_state.get_peer_display_names()}")
   client_logger.info(f"Followers: {client_state.get_followers()}")
   client_logger.info(f"Following: {client_state.get_following()}")
+  client_logger.info(f"Groups: {client_state.get_all_groups()}")
 
 def get_func_args(func_signature: inspect.Signature) -> dict:
   new_msg_args = {}

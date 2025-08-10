@@ -14,11 +14,21 @@ class GroupMessage(BaseMessage):
         "FROM": {"type": UserID, "required": True},
         "GROUP_ID": {"type": str, "required": True},
         "CONTENT": {"type": str, "required": True},
-        "MESSAGE_ID": {"type": MessageID, "required": True},
         "TIMESTAMP": {"type": Timestamp, "required": True},
         "TOKEN": {"type": Token, "required": True},
     }
 
+    @property
+    def payload(self) -> dict:
+        return {
+            "TYPE": self.TYPE,
+            "FROM": self.from_user,
+            "GROUP_ID": self.group_id,
+            "CONTENT": self.content,
+            "TIMESTAMP": self.timestamp,
+            "TOKEN": self.token,
+        }
+    
     def __init__(self, group_id: str, content: str, ttl: TTL = 3600):
         """
         Initialize a new group message
@@ -42,7 +52,6 @@ class GroupMessage(BaseMessage):
         self.group_id = group_id
         self.content = content
         self.timestamp = Timestamp(unix_now)
-        self.message_id = MessageID.generate()
         self.token = Token(self.from_user, self.timestamp + ttl, Token.Scope.GROUP)
 
     @classmethod
@@ -52,7 +61,6 @@ class GroupMessage(BaseMessage):
         new_obj.from_user = UserID.parse(data["FROM"])
         new_obj.group_id = data["GROUP_ID"]
         new_obj.content = data["CONTENT"]
-        new_obj.message_id = MessageID.parse(data["MESSAGE_ID"])
         new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
         new_obj.token = Token.parse(data["TOKEN"])
         Token.validate_token(new_obj.token, expected_scope=Token.Scope.GROUP, expected_user_id=new_obj.from_user)
@@ -60,17 +68,6 @@ class GroupMessage(BaseMessage):
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
         return new_obj
 
-    @property
-    def payload(self) -> dict:
-        return {
-            "TYPE": self.TYPE,
-            "FROM": self.from_user,
-            "GROUP_ID": self.group_id,
-            "CONTENT": self.content,
-            "MESSAGE_ID": self.message_id,
-            "TIMESTAMP": self.timestamp,
-            "TOKEN": self.token,
-        }
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         """Send the group message to all members of the group"""

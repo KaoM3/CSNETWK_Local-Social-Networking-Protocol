@@ -135,11 +135,16 @@ class FileOffer(BaseMessage):
         ack.send(socket=client.get_unicast_socket(), ip=received.from_user.get_ip(), port=config.PORT)
 
         # Ask user if they want to accept
-        response = client_logger.input(f"User {received.from_user} is sending you a file do you accept? (y/n): ").lower()
-        if response == 'y':
-            new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
-            file_state.add_pending_transfer(received.fileid, new_transfer)
-            file_state.accept_file(received.fileid)
+        #client_logger.info("Someone wants to send you a file! (press enter)")
+        #response = client_logger.queue_input(f"User {received.from_user} is sending you a file do you accept? (y/n): ").lower()
+        #if response == 'y':
+        #    new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
+        #    file_state.add_pending_transfer(received.fileid, new_transfer)
+        #    file_state.accept_file(received.fileid)
+        
+        new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
+        file_state.add_pending_transfer(received.fileid, new_transfer)
+        file_state.accept_file(received.fileid)
 
         return received
 

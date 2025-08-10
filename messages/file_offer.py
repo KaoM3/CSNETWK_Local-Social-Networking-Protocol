@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from custom_types.fields import UserID, Token, Timestamp, TTL, MessageID
+from custom_types.file_transfer import FileTransfer
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
 from utils.file_transfer import chunk_file, get_file_info
@@ -7,6 +8,9 @@ from utils import msg_format
 import socket
 from client_logger import client_logger
 from states.file_state import file_state
+from messages.ack import Ack
+import time
+import config
 
 class FileOffer(BaseMessage):
     TYPE = "FILE_OFFER"
@@ -20,7 +24,7 @@ class FileOffer(BaseMessage):
         "FILESIZE": {"type": int, "required": True},
         "FILETYPE": {"type": str, "required": True},
         "FILEID": {"type": MessageID, "required": True},
-        "DESCRIPTION": {"type": str, "required": False},
+        "DESCRIPTION": {"type": str, "required": True},
         "TIMESTAMP": {"type": Timestamp, "required": True},
         "TOKEN": {"type": Token, "required": True}
     }
@@ -41,22 +45,26 @@ class FileOffer(BaseMessage):
         }
         return payload
 
-    def __init__(self, to: UserID, filepath: str, description: str = "", ttl: TTL = 3600):
-        client_logger.debug("INIT FILE OFFER")
+    def __init__(self, to: UserID, filepath: str, description: str = " ", ttl: TTL = 3600):
         unix_now = int(datetime.now(timezone.utc).timestamp())
         self.type = self.TYPE
         self.from_user = client_state.get_user_id()
         self.to_user = to
         # Get file info
         try:
+            client_logger.debug(f"Getting File Information for {filepath}")
             filename, filesize, filetype = get_file_info(filepath)
+            client_logger.debug(f"{filepath}:\nfilename: {filename}\nfilesize: {filesize}\nfiletype: {filetype}")
         except:
             raise ValueError("Filepath is invalid")
         self.filename = filename
         self.filesize = filesize
         self.filetype = filetype
         self.fileid = MessageID.generate()
-        self.description = description
+        if description == " ":
+            self.description = ""
+        else:
+            self.description = description
         self.timestamp = Timestamp(unix_now)
         self.token = Token(self.from_user, self.timestamp + ttl, self.SCOPE)
 
@@ -79,11 +87,28 @@ class FileOffer(BaseMessage):
         return new_obj
 
     def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str="utf-8") -> tuple[str, int]:
-        file_state.add_pending_transfer(self, self.fileid, self.filename, self.total)
-        
         if ip == "default":
             ip = self.to_user.get_ip()
-        return super().send(socket, ip, port, encoding)
+
+        retries = 0
+        dest = ("failed", port)
+        while retries < 3:
+            # Send message
+            dest = super().send(socket, ip, port, encoding)
+            client_logger.debug(f"Sent file chunk {self.fileid}, attempt {retries + 1}")
+
+            # Wait a bit for ACK
+            time.sleep(2)  # Lower this to 0.5 or 1 if latency is tight
+
+            # Check for ACK
+            if client_state.get_ack_message(self.fileid) is not None:
+                client_logger.debug(f"Received ACK for file {self.fileid}")
+                return dest
+
+            retries += 1
+
+        client_logger.warn(f"No ACK received for file {self.fileid} after {retries} attempts.")
+        return dest
 
     @classmethod
     def receive(cls, raw: str) -> "FileOffer":
@@ -91,23 +116,22 @@ class FileOffer(BaseMessage):
         if received.to_user != client_state.get_user_id():
             raise ValueError("Message is not intended to be received by this client")
         
+        import client
+        client.initialize_sockets(config.PORT)
+        ack = Ack(message_id=received.fileid)
+        ack.send(socket=client.get_unicast_socket(), ip=received.from_user.get_ip(), port=config.PORT)
+
         # Ask user if they want to accept
-        response = client_logger.input("Accept file? (y/n): ").lower()
+        response = client_logger.input(f"User {received.from_user} is sending you a file do you accept? (y/n): ").lower()
         if response == 'y':
-            file_state.accept_file(received.fileid)
-            file_state.add_pending_transfer(
-                received.fileid,
-                received.filename,
-                0,  # Will be set when receiving first chunk
-                received.filetype,
-                received.filesize
-            )
+            new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
+            file_state.add_pending_transfer(received.fileid, new_transfer)
             
         return received
 
     def info(self, verbose: bool = False) -> str:
         if verbose:
             return f"{self.payload}"
-        return f"User {self.from_user} is sending you a file do you accept?"
+        return ""
 
 __message__ = FileOffer

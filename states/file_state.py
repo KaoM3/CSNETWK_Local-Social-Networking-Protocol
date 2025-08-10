@@ -31,11 +31,11 @@ class FileState:
         self._files_dir = os.path.join(project_root, "received_files")
         os.makedirs(self._files_dir, exist_ok=True)
 
-    def _validate_message_id(data):
+    def _validate_message_id(self, data):
         if not isinstance(data, MessageID):
             raise ValueError(f"{data} is not of type MessageID")
         
-    def _validate_file_transfer(data):
+    def _validate_file_transfer(self, data):
         if not isinstance(data, FileTransfer):
             raise ValueError(f"{data} is not of type FileTransfer")
 

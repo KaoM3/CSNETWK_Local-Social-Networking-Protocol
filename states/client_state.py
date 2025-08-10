@@ -1,5 +1,5 @@
 import threading
-from custom_types.fields import UserID, Token
+from custom_types.fields import UserID, Token, MessageID
 from custom_types.base_message import BaseMessage
 from client_logger import client_logger
 import time
@@ -36,6 +36,10 @@ class ClientState:
   def _validate_base_message(self, data):
     if not isinstance(data, BaseMessage):
       raise ValueError(f"ERROR: {data} is not of type BaseMessage")
+  
+  def _validate_message_id(self, data):
+    if not isinstance(data, MessageID):
+        raise ValueError(f"ERROR: {data} is not of type MessageID")
     
   def cleanup_expired_messages(self):
     with self._lock:
@@ -168,6 +172,14 @@ class ClientState:
           continue
         client_logger.debug(f"REVOKE: Invalidating message: {msg}")
       self._recent_messages = valid_messages
+
+  def get_ack_message(self, message_id) -> "BaseMessage":
+    with self._lock:
+      self._validate_message_id(message_id)
+      for msg in self._recent_messages:
+        if msg.type == "ACK" and message_id == msg.message_id:
+          return msg
+      return None
 
 
 client_state = ClientState()

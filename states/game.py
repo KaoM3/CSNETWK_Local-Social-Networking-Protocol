@@ -30,18 +30,38 @@ class GameState:
         """Prints the current game board."""
         print(self.get_board_string())
 
-    def move(self, position: int, symbol: str):
-        """Make a move on the board."""
-        if position < 0 or position > 8:
+    def move(self, user_id: str, position: int):
+        """
+        Validates and makes a move for the given user.
+        
+        Raises:
+            ValueError: If player is invalid, it's not their turn, 
+                        position is invalid, or symbol is invalid.
+        """
+        # Validate player and turn
+        if user_id not in [self.player_x, self.player_o]:
+            raise ValueError(f"User {user_id} is not a player in this game")
+
+        if user_id == self.player_x:
+            if self.turn % 2 != 1:
+                raise ValueError(f"Player X ({user_id}) can only move on turns 1, 3, 5, etc. Current turn: {self.turn}")
+            symbol = 'X'
+        else:  # user_id == self.player_o
+            if self.turn % 2 != 0:
+                raise ValueError(f"Player O ({user_id}) can only move on turns 2, 4, 6, etc. Current turn: {self.turn}")
+            symbol = 'O'
+
+        # Validate position
+        if not (0 <= position <= 8):
             raise ValueError("Position must be between 0 and 8")
         if self.board[position] != ' ':
             raise ValueError("Position already taken")
-        if symbol not in ['X', 'O']:
-            raise ValueError("Symbol must be either 'X' or 'O'")
+
+        # Make the move
         self.board[position] = symbol
-        self.last_symbol = symbol  # ✅ Save the last move symbol
+        self.last_symbol = symbol
         self.turn += 1
-        client_logger.info(f"Player {symbol} moved to position {position}")
+        client_logger.info(f"Player {symbol} ({user_id}) moved to position {position}")
 
 
 class GameSessionManager:
@@ -66,27 +86,6 @@ class GameSessionManager:
         game.player_o = player_o
         client_logger.info(f"Assigned {player_x} as X and {player_o} as O in game {game_id}")
 
-
-    def is_turn(self, game_id: str, user_id: str) -> bool:
-        """Checks if it is the given user's turn and raises ValueError if not."""
-        game = self.find_game(game_id)
-        if not game:
-            raise ValueError(f"Game with ID '{game_id}' does not exist.")
-
-        if user_id not in [game.player_x, game.player_o]:
-            raise ValueError(f"User {user_id} is not a player in game {game_id}")
-
-        if user_id == game.player_x:
-            if game.turn % 2 != 1:
-                raise ValueError(f"Player X ({user_id}) can only move on turns 1, 3, 5, etc. Current turn: {game.turn}")
-            return True
-        elif user_id == game.player_o:
-            if game.turn % 2 != 0:
-                raise ValueError(f"Player O ({user_id}) can only move on turns 2, 4, 6, etc. Current turn: {game.turn}")
-            return True
-
-        # This should never happen, but just in case
-        raise ValueError(f"User {user_id} is not assigned to any player in game {game_id}")
 
 
     def get_player_symbol(self, game_id: str, user_id: str) -> Optional[str]:

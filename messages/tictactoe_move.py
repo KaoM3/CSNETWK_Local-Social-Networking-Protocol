@@ -71,8 +71,6 @@ class TicTacToeMove(BaseMessage):
         if not (0 <= position <= 8):
             raise ValueError("Position must be between 0 and 8")
         
-        
-        game_session_manager.is_turn(game_id, client_state.get_user_id())
 
 
         unix_now = int(datetime.now(timezone.utc).timestamp())
@@ -117,11 +115,11 @@ class TicTacToeMove(BaseMessage):
 
 
         game = game_session_manager.find_game(self.game_id)
-
+        
         if not game:
             game = game_session_manager.create_game(self.game_id)# Acknowledge the move
 
-        game.move(self.position, self.symbol)
+        game.move(self.from_user,self.position)
         game.print_board()
         
 
@@ -157,11 +155,12 @@ class TicTacToeMove(BaseMessage):
         ack.send(socket=client.get_broadcast_socket(), ip=move_received.from_user.get_ip(), port=config.PORT)
 
         game = game_session_manager.find_game(move_received.game_id)
+        
 
         if not game:
             game = game_session_manager.create_game(move_received.game_id)
 
-        game.move(move_received.position, move_received.symbol)
+        game.move(move_received.from_user,move_received.position)
         game.print_board()
 
         if game_session_manager.is_winning_move(move_received.game_id):

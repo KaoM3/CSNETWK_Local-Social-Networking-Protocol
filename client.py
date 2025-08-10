@@ -96,6 +96,7 @@ def main():
 
   # Initialize router
   router.load_messages(config.MESSAGES_DIR)
+  router.load_messages(f"{config.MESSAGES_DIR}.file")
 
   # Set client UserID
   client_state.set_user_id(interface.get_user_id())

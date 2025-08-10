@@ -36,6 +36,7 @@ def display_help(message_registry: dict):
   help_prompt.append("info:\t\tshows client details")
   help_prompt.append("recent:\t\tshows received messages")
   help_prompt.append("verbose:\ttoggles verbose mode settings")
+  help_prompt.append("file:\t\tsend a file to another user")
   help_prompt.append("cls:\t\tclears the screen")
   help_prompt.append("help:\t\tshows available commands")
   help_prompt.append("exit:\t\texits the program")
@@ -69,6 +70,9 @@ def get_command(message_registry: dict):
       show_client_details()
     elif command == "RECENT":
       show_recent_messages()
+    elif command == "FILE":
+      from utils.file_commands import handle_file_command
+      handle_file_command()
     elif command == "EXIT":
       return None
     else:

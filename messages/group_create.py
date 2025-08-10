@@ -83,6 +83,12 @@ class GroupCreate(BaseMessage):
         return new_obj
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
+        # Check if group ID already exists
+        existing_group = client_state.get_group(self.group_id)
+        if existing_group:
+            client_logger.error(f"Cannot create group: Group ID '{self.group_id}' already exists")
+            return (ip, port)
+
         msg = msg_format.serialize_message(self.payload)
         # Group create messages should be sent to all peers
         for peer in client_state.get_peers():

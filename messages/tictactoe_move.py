@@ -2,8 +2,7 @@
 # TODO: Implement send()
 # TODO: Implement receive()
 
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token, MessageID, TTL, Timestamp
 from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
@@ -28,7 +27,7 @@ class TicTacToeMove(BaseMessage):
         "FROM": {"type": UserID, "required": True},
         "TO": {"type": UserID, "required": True},
         "GAMEID": {"type": str, "required": True},
-        "MESSAGE_ID": {"type": str, "required": True},
+        "MESSAGE_ID": {"type": MessageID, "required": True},
         "POSITION": {"type": int, "required": True},
         "SYMBOL": {"type": str, "required": True},
         "TURN": {"type": int, "required": True},
@@ -50,7 +49,7 @@ class TicTacToeMove(BaseMessage):
         }
 
     def __init__(self, to: UserID, game_id: str, position: int, 
-                 symbol: str, ttl: int = 3600):
+                 symbol: str, ttl: TTL = 3600):
         """
         Initialize a new TicTacToe move.
         
@@ -88,8 +87,8 @@ class TicTacToeMove(BaseMessage):
         self.position = msg_format.sanitize_position(position)
         self.symbol = symbol
         self.turn = msg_format.sanitize_turn(game_turn)
-        self.message_id = msg_format.generate_message_id()
-        self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
+        self.message_id = MessageID.generate()
+        self.token = Token(self.from_user, Timestamp(unix_now) + ttl, Token.Scope.GAME)
 
     @classmethod
     def parse(cls, data: dict) -> "TicTacToeMove":
@@ -108,13 +107,9 @@ class TicTacToeMove(BaseMessage):
         new_obj.symbol = data["SYMBOL"]
         new_obj.turn = msg_format.sanitize_position(data["TURN"])
 
-        message_id = data["MESSAGE_ID"]
-        msg_format.validate_message_id(message_id)
-        new_obj.message_id = message_id
-
+        new_obj.message_id = MessageID.parse(data["MESSAGE_ID"]) 
         new_obj.token = Token.parse(data["TOKEN"])
-        msg_format.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
-
+        Token.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
         return new_obj
 

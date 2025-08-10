@@ -1,7 +1,7 @@
 import threading
 from client_logger import client_logger
 from typing import Dict, Optional
-from custom_types.user_id import UserID
+
 
 class GameState:
     """Tracks the state of TicTacToe games and prints the board only."""

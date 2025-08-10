@@ -9,8 +9,7 @@ import random
 import config
 import client
 
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token, Timestamp, MessageID, TTL
 from custom_types.base_message import BaseMessage
 from utils import msg_format
 from states.client_state import client_state
@@ -33,8 +32,8 @@ class TicTacToeInvite(BaseMessage):
         "TO": {"type": UserID, "required": True},
         "GAMEID": {"type": str, "required": True},
         "SYMBOL": {"type": str, "required": True},
-        "MESSAGE_ID": {"type": str, "required": True},
-        "TIMESTAMP": {"type": int, "required": True},
+        "MESSAGE_ID": {"type": MessageID, "required": True},
+        "TIMESTAMP": {"type": Timestamp, "required": True},
         "TOKEN": {"type": Token, "required": True},
     }
 
@@ -51,7 +50,7 @@ class TicTacToeInvite(BaseMessage):
             "TOKEN": self.token,
         }
 
-    def __init__(self, to: UserID, symbol: str, ttl: int = 3600):
+    def __init__(self, to: UserID, symbol: str, ttl: TTL = 3600):
         """Initialize game invitation with validation"""
         unix_now = int(datetime.now(timezone.utc).timestamp())
 
@@ -65,9 +64,9 @@ class TicTacToeInvite(BaseMessage):
         self.to_user = to
         self.game_id = f"g{random.randint(0, 255)}"
         self.symbol = symbol
-        self.timestamp = unix_now
-        self.message_id = msg_format.generate_message_id()
-        self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
+        self.timestamp = Timestamp(unix_now)
+        self.message_id = MessageID.generate()
+        self.token = Token(self.from_user, self.timestamp + ttl, Token.Scope.GAME)
 
 
     @classmethod
@@ -79,17 +78,10 @@ class TicTacToeInvite(BaseMessage):
         new_obj.to_user = UserID.parse(data["TO"])
         new_obj.game_id = data["GAMEID"]
         new_obj.symbol = data["SYMBOL"]
-
-        timestamp = int(data["TIMESTAMP"])
-        msg_format.validate_timestamp(timestamp)
-        new_obj.timestamp = timestamp
-
-        message_id = data["MESSAGE_ID"]
-        msg_format.validate_message_id(message_id)
-        new_obj.message_id = message_id
-
+        new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
+        new_obj.message_id = MessageID.parse(data["MESSAGE_ID"]) 
         new_obj.token = Token.parse(data["TOKEN"])
-        msg_format.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
+        Token.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
 
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
         return new_obj

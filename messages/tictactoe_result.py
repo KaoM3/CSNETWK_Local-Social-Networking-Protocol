@@ -1,8 +1,7 @@
 # TODO: Implement Schema
 # TODO: Implement send()
 # TODO: Implement receive()
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token, Timestamp, MessageID, TTL
 from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
@@ -23,12 +22,13 @@ class TicTacToeResult(BaseMessage):
         "FROM": {"type": UserID, "required": True},
         "TO": {"type": UserID, "required": True},
         "GAMEID": {"type": str, "required": True},
-        "MESSAGE_ID": {"type": str, "required": True},
+        "MESSAGE_ID": {"type": MessageID, "required": True},
         "RESULT": {"type": str, "required": True},   # WIN, LOSS, DRAW, FORFEIT
         "SYMBOL": {"type": str, "required": True},   # X or O
         "WINNING_LINE": {"type": str, "required": True},  # e.g., [0, 1, 2]
         "TURN": {"type": int, "required": True},
-        "TOKEN": {"type": Token, "required": True}
+        "TOKEN": {"type": Token, "required": True},
+        "TIMESTAMP": {"type": Timestamp, "required": True}
     }
 
     @property
@@ -47,7 +47,7 @@ class TicTacToeResult(BaseMessage):
         }
 
     def __init__(self, to: UserID, gameid: str, result: str, symbol: str,
-                 winning_line: list, turn: int, ttl: int = 3600):
+                 winning_line: list, turn: int, ttl: TTL = 3600):
         """
         Initialize a TicTacToeResult message.
         
@@ -82,8 +82,9 @@ class TicTacToeResult(BaseMessage):
         self.symbol = symbol
         self.winning_line = winning_line
         self.turn = msg_format.sanitize_position(turn)
-        self.message_id = msg_format.generate_message_id()
+        self.message_id = MessageID.generate()
         self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
+        self.timestamp = Timestamp(unix_now)
 
     @classmethod
     def parse(cls, data: dict) -> "TicTacToeResult":
@@ -97,12 +98,10 @@ class TicTacToeResult(BaseMessage):
         new_obj.winning_line = data["WINNING_LINE"]
         new_obj.turn = msg_format.sanitize_position(data["TURN"])
 
-        message_id = data["MESSAGE_ID"]
-        msg_format.validate_message_id(message_id)
-        new_obj.message_id = message_id
-
+        new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
+        new_obj.message_id = MessageID.parse(data["MESSAGE_ID"]) 
         new_obj.token = Token.parse(data["TOKEN"])
-        msg_format.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
+        Token.validate_token(new_obj.token, expected_scope=Token.Scope.GAME, expected_user_id=new_obj.from_user)
 
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
         return new_obj

@@ -2,9 +2,8 @@
 # TODO: Implement send()
 # TODO: Implement receive()
 
-from custom_types.token import Token
+from custom_types.fields import MessageID
 from custom_types.base_message import BaseMessage
-from datetime import datetime, timezone
 from utils import msg_format
 from states.client_state import client_state
 import socket
@@ -14,7 +13,7 @@ class Ack(BaseMessage):
     __hidden__ = True
     __schema__ = {
         "TYPE": TYPE,
-        "MESSAGE_ID": {"type": str, "required": True},
+        "MESSAGE_ID": {"type": MessageID, "required": True},
         "STATUS": {"type": str, "required": True},
     }
 
@@ -26,7 +25,7 @@ class Ack(BaseMessage):
             "STATUS": self.status,
         }
 
-    def __init__(self, message_id: str,status: str = "RECEIVED"):
+    def __init__(self, message_id: MessageID,status: str = "RECEIVED"):
         self.type = self.TYPE
         self.message_id = message_id
         self.status = status
@@ -35,10 +34,8 @@ class Ack(BaseMessage):
     def parse(cls, data: dict) -> "Ack":
         new_obj = cls.__new__(cls)
         new_obj.type = data["TYPE"]
-        
-        message_id = data["MESSAGE_ID"]
-        msg_format.validate_message_id(message_id)
-        new_obj.message_id = message_id
+    
+        new_obj.message_id = MessageID.parse(data["MESSAGE_ID"])
 
         new_obj.status = data["STATUS"]
 

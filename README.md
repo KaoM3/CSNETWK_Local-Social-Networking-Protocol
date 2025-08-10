@@ -4,14 +4,14 @@ LSNP (Lightweight Social Networking Protocol) is a decentralized, peer-to-peer m
 
 # Terminology
 - Peer: A device participating in LSNP
-- Profi le: User’s identity message
+- Profile: User’s identity message
 - Post: Public message to all peers
 - DM: Private message to one peer
 - Token: Expiring text credential
-- Chunk: Part of a multi-packet fi le
+- Chunk: Part of a multi-packet file
 - TTL: Time-to-live in seconds
-- GameID: Identifi er for a game session
-- GroupID: Identifi er for a group
+- GameID: Identifier for a game session
+- GroupID: Identifier for a group
 
 # Protocol Overview
 - Transport: UDP (broadcast & unicast)
@@ -28,13 +28,15 @@ project/
 ├── config.py
 ├── client.py
 ├── interface.py
-├── log.py
+├── client_logger.py
 ├── router.py
 ├── custom_types/
-│   ├── token.py
-│   └── user_id.py
-├── messages/
 │   ├── base_message.py
+│   └── fields.py
+├── messages/
+│   └── ...
+├── states/
+│   ├── client_state.py
 │   └── ...
 ├── tests/
 │   └── ...  
@@ -47,13 +49,14 @@ project/
 - `client.py`: Entry point of the application; initializes sockets, threads, and config
 - `config.py`: Contains code for getting the device and broadcast IPs and configuration options such as `PORT`, `ENCODING`, etc.
 - `interface.py`: Serves as the view, responsible for I/O
-- `log.py`: Contains helper functions for logging
+- `client_logger.py`: A globally accessible singleton containing functions for displaying information and logging to a log file
 - `router.py`: Responsible for dynamic importing of message types and routing incoming messages to its corresponding type
 - `custom_types/`: Folder for custom data types
-  - `token.py`: Custom data type implementation for the `TOKEN` field
-  - `user_id.py`: Cusotm data type implementation for the `USERID` field
+  - `base_message.py`: Custom abstract base class for implementating message types
+  - `fields.py`: Module containin implementation for custom data types used in message fields such as `TOKEN`, `USER_ID`, `MESSAGE_ID`, etc.
 - `messages/`: Folder containing all message types
-  - `base_message.py`: Abstract base class for all message handlers
+- `states/`: Folder containing all state modules
+  - `client_state.py`: A globally accessible singleton containing client data including known peers, nicknames, recent messages, etc. 
 - `utils/`: Folder for utility files
   - `msg_format.py`: Contains helper functions for formatting messages such as `serialize_message`, `deserialize_message`, etc.
 
@@ -68,15 +71,17 @@ python client.py --port PORT_NUM --verbose
 Optional arguments:
 - `--port PORT_NUM`: Overrides the default port located in `config.py`
 - `--verbose`: Toggles verbose mode to on
+- `--subnet`: Specifies the subnet mask, accepts the prefix of CIDR notation
+- `--ipaddress`: Overrides the automatic IP address detection, useful for testing with VPNs
 
 
 ## Adding New Message Types
-Each message is represented as a python file under the `messages/` folder. These are dynamically loaded by `router.py`. Instantiating new messages would also be automated and as such, each message type should:
+Each message is represented as a python file under the `messages/` folder. These are dynamically loaded by `router.py`. Each message type should be self validating, meaning that all instances of a message type should be considered valid. Instantiating new messages would also be automated and as such, each message type should:
 
 - Inherit from `BaseMessage`, an abstract class defining what functionality the message should implement.
-- Include `__schema__` under the implementing class, which dictates the format of the message type.
+- Include `__schema__` under the implementing class, which dictates the format (the type of the message, including information such as the field data types) of the message.
 - Include `__message__` inside the module, which points to the implementing class.
-- Match constructor variable ordering and name with its field names as defined in `__schema__` (typically lowercase versions of the keys).
+- As convention, match constructor variable ordering and name with its field names as defined in `__schema__` (typically lowercase versions of the keys).
 
 In case the field name cannot be used as a constructor argument name, include an underscore on the end: e.g. from -> from_
 
@@ -93,5 +98,17 @@ Each RULE may include the following flags:
 
 - `type`: The allowed data type of the field's value
 - `required`: If `True` the field's values cannot be empty
-- `input`: If `True`, this field is needed as an argument for the class constructor
-- `output`: Can be set to `True`, useful to user interfaces for displaying
+
+Example:
+```
+TYPE = "POST"
+__schema__ = {
+  "TYPE": cls.TYPE,
+  "USER_ID": {"type": UserID, "required": True},
+  "CONTENT": {"type": str, "required": True},
+}
+```
+Where
+- `TYPE`: Always the message type (e.g. "POST")
+- `USER_ID`: Must be a UserID object
+- `CONTENT`: Non-empty string

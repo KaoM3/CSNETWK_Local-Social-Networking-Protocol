@@ -1,6 +1,5 @@
 import threading
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token
 from custom_types.base_message import BaseMessage
 from client_logger import client_logger
 import time

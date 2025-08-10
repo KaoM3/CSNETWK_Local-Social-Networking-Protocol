@@ -35,6 +35,9 @@ class Follow(BaseMessage):
 
   def __init__(self, to: UserID, ttl: TTL = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
+
+    
+
     self.type = self.TYPE
     self.from_user = client_state.get_user_id()
     self.to_user = to

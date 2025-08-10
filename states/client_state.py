@@ -23,6 +23,7 @@ class ClientState:
     self._peer_display_names = {}
     self._followers = []
     self._following = []
+    self._group_members = []
     self._recent_messages_received = []
     self._recent_messages_sent = []
     self._revoked_tokens = []
@@ -139,6 +140,13 @@ class ClientState:
         self._following.append(target)
         client_logger.debug(f"Added following: {target}")
 
+  def add_group_member(self, member: UserID):
+    with self._lock:
+      self._validate_user_id(member)
+      if member not in self._group_members:
+        self._group_members.append(member)
+        client_logger.debug(f"Added group member: {member}")
+
   def remove_following(self, target: UserID):
     with self._lock:
       self._validate_user_id(target)
@@ -157,6 +165,10 @@ class ClientState:
   def get_following(self) -> list[UserID]:
     with self._lock:
       return self._following.copy()
+    
+  def get_group_members(self) -> list[UserID]:
+      with self._lock:
+        return self._following.copy()
     
   def add_recent_message_received(self, message: BaseMessage):
     with self._lock:

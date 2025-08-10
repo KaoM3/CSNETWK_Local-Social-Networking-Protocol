@@ -10,6 +10,10 @@ class GameState:
         self.board = [' '] * 9
         self.last_symbol: Optional[str] = None  
         self.turn = 1  
+        self.player_x: Optional[str] = None
+        self.player_o: Optional[str] = None
+        self.starting_symbol: str = "X"  # X always starts unless changed
+
 
     def get_board_string(self) -> str:
         """Returns the current game board as a string."""
@@ -51,6 +55,47 @@ class GameSessionManager:
         """Returns the current turn number for the specified game."""
         game = self.find_game(game_id)
         return game.turn
+
+
+    def assign_players(self, game_id: str, player_x: str, player_o: str):
+        """Assigns players to X and O for a specific game."""
+        game = self.find_game(game_id)
+        if not game:
+            raise ValueError(f"Game with ID '{game_id}' does not exist.")
+        game.player_x = player_x
+        game.player_o = player_o
+        client_logger.info(f"Assigned {player_x} as X and {player_o} as O in game {game_id}")
+
+
+    def is_turn(self, game_id: str, user_id: str) -> bool:
+        """Checks if it is the given user's turn."""
+        game = self.find_game(game_id)
+        if not game:
+            raise ValueError(f"Game with ID '{game_id}' does not exist.")
+
+        if user_id not in [game.player_x, game.player_o]:
+            raise ValueError(f"User {user_id} is not a player in game {game_id}")
+
+        if user_id == game.player_x:
+            return game.turn % 2 == 1
+        elif user_id == game.player_o:
+            return game.turn % 2 == 0
+
+        # Should never reach here
+        raise ValueError(f"User {user_id} is not assigned to any player in game {game_id}")
+
+    def get_player_symbol(self, game_id: str, user_id: str) -> Optional[str]:
+        """Returns the symbol of the player in the game."""
+        game = self.find_game(game_id)
+        if not game:
+            raise ValueError(f"Game with ID '{game_id}' does not exist.")
+
+        if user_id == game.player_x:
+            return 'X'
+        elif user_id == game.player_o:
+            return 'O'
+        
+        return None
 
     def create_game(self, game_id: str) -> GameState:
         """Creates a new game session with the given game_id."""
@@ -121,7 +166,5 @@ class GameSessionManager:
         return None
 
 
-
-
-
+# Global instance
 game_session_manager = GameSessionManager()

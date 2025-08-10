@@ -95,7 +95,11 @@ class TicTacToeInvite(BaseMessage):
 
         if not game:
             game_session_manager.create_game(self.game_id)
-
+            if self.symbol == "X":
+                game_session_manager.assign_players(self.game_id, self.from_user, self.to_user)
+            else:
+                game_session_manager.assign_players(self.game_id, self.to_user, self.from_user)
+        
         #socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
         if ip == "default":
             ip = self.to_user.get_ip()
@@ -120,6 +124,10 @@ class TicTacToeInvite(BaseMessage):
 
         if not game:
             game_session_manager.create_game(received_invite.game_id)
+            if received_invite.symbol == "X":
+                game_session_manager.assign_players(received_invite.game_id, received_invite.to_user, received_invite.from_user)
+            else:
+                game_session_manager.assign_players(received_invite.game_id, received_invite.from_user, received_invite.to_user)
 
         return received_invite
 

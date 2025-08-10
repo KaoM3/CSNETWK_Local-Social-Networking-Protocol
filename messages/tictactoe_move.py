@@ -48,8 +48,7 @@ class TicTacToeMove(BaseMessage):
             "TOKEN": self.token
         }
 
-    def __init__(self, to: UserID, game_id: str, position: int, 
-                 symbol: str, ttl: TTL = 3600):
+    def __init__(self, to: UserID, game_id: str, position: int, ttl: TTL = 3600):
         """
         Initialize a new TicTacToe move.
         
@@ -72,10 +71,8 @@ class TicTacToeMove(BaseMessage):
         if not (0 <= position <= 8):
             raise ValueError("Position must be between 0 and 8")
         
-        # Validate symbol
-        symbol = str(symbol).upper()
-        if symbol not in ['X', 'O']:
-            raise ValueError("Symbol must be either 'X' or 'O'")
+        
+        game_session_manager.is_turn(game_id, client_state.get_user_id())
 
 
         unix_now = int(datetime.now(timezone.utc).timestamp())
@@ -85,7 +82,7 @@ class TicTacToeMove(BaseMessage):
         self.to_user = to
         self.game_id = msg_format.check_game_id(game_id)
         self.position = msg_format.sanitize_position(position)
-        self.symbol = symbol
+        self.symbol = game_session_manager.get_symbol(game_id, self.from_user)
         self.turn = msg_format.sanitize_turn(game_turn)
         self.message_id = MessageID.generate()
         self.token = Token(self.from_user, Timestamp(unix_now) + ttl, Token.Scope.GAME)

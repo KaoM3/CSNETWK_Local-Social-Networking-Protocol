@@ -9,6 +9,7 @@ class GameState:
     def __init__(self):
         self.board = [' '] * 9
         self.last_symbol: Optional[str] = None  
+        self.turn = 1  
 
     def get_board_string(self) -> str:
         """Returns the current game board as a string."""
@@ -35,6 +36,7 @@ class GameState:
             raise ValueError("Symbol must be either 'X' or 'O'")
         self.board[position] = symbol
         self.last_symbol = symbol  # ✅ Save the last move symbol
+        self.turn += 1
         log.info(f"Player {symbol} moved to position {position}")
 
 
@@ -44,6 +46,11 @@ class GameSessionManager:
     def __init__(self):
         self._lock = threading.Lock()
         self._sessions: Dict[str, GameState] = {}
+
+    def get_turn(self, game_id: str) -> int:
+        """Returns the current turn number for the specified game."""
+        game = self.find_game(game_id)
+        return game.turn
 
     def create_game(self, game_id: str) -> GameState:
         """Creates a new game session with the given game_id."""

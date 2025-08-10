@@ -104,11 +104,11 @@ def sanitize_position(position: int):
 
 def sanitize_turn(turn: int):
   try:
-    ttl = int(ttl)
-    if ttl <= 0:
+    turn = int(turn)
+    if turn < 0:
       raise ValueError()
   except (ValueError, TypeError):
-    raise ValueError("Position must be an integer above 0")
+    raise ValueError(f"{turn}Invalid turn number")
   return turn
 
 import re

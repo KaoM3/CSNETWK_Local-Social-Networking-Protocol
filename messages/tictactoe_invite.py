@@ -15,7 +15,7 @@ from custom_types.base_message import BaseMessage
 from utils import msg_format
 from states.client_state import client_state
 from messages.ack import Ack
-
+from states.game import game_session_manager
 
 
 
@@ -99,6 +99,11 @@ class TicTacToeInvite(BaseMessage):
         """Sends game invitation to target user and initializes game state"""
         # Send the invite payload first
         msg = msg_format.serialize_message(self.payload)
+        game = game_session_manager.find_game(self.game_id)
+
+        if not game:
+            game_session_manager.create_game(self.game_id)
+
         socket.sendto(msg.encode(encoding), (self.to_user.get_ip(), port))
 
 
@@ -116,6 +121,10 @@ class TicTacToeInvite(BaseMessage):
         ack = Ack(message_id=received_invite.message_id)
         ack.send(socket=client.get_broadcast_socket(), ip=received_invite.from_user.get_ip(), port=config.PORT)
 
+        game = game_session_manager.find_game(received_invite.game_id)
+
+        if not game:
+            game_session_manager.create_game(received_invite.game_id)
 
         return received_invite
 

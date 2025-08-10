@@ -50,7 +50,7 @@ class TicTacToeMove(BaseMessage):
         }
 
     def __init__(self, to: UserID, game_id: str, position: int, 
-                 symbol: str, turn: int, ttl: int = 3600):
+                 symbol: str, ttl: int = 3600):
         """
         Initialize a new TicTacToe move.
         
@@ -64,6 +64,7 @@ class TicTacToeMove(BaseMessage):
             ttl: Time to live in seconds (default 3600)
         """
         
+        game_turn = game_session_manager.get_turn(game_id) 
         try:
             position = int(position)
         except (TypeError, ValueError):
@@ -77,11 +78,6 @@ class TicTacToeMove(BaseMessage):
         if symbol not in ['X', 'O']:
             raise ValueError("Symbol must be either 'X' or 'O'")
 
-        # Convert turn to int
-        try:
-            turn = int(turn)
-        except (TypeError, ValueError):
-            raise ValueError("Turn must be a valid integer")
 
         unix_now = int(datetime.now(timezone.utc).timestamp())
         
@@ -91,7 +87,7 @@ class TicTacToeMove(BaseMessage):
         self.game_id = msg_format.check_game_id(game_id)
         self.position = msg_format.sanitize_position(position)
         self.symbol = symbol
-        self.turn = msg_format.sanitize_position(turn)
+        self.turn = msg_format.sanitize_turn(game_turn)
         self.message_id = msg_format.generate_message_id()
         self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
 
@@ -143,7 +139,7 @@ class TicTacToeMove(BaseMessage):
             result = TicTacToeResult(
                 to=self.to_user,
                 gameid=self.game_id,
-                result="LOSE",
+                result="WIN",
                 symbol=self.symbol,
                 winning_line=winning_line,
                 turn=self.turn,
@@ -179,7 +175,7 @@ class TicTacToeMove(BaseMessage):
             result = TicTacToeResult(
                 to=move_received.to_user,
                 gameid=move_received.game_id,
-                result="LOSE",
+                result="LOSS",
                 symbol=move_received.symbol,
                 winning_line=winning_line,
                 turn=move_received.turn,

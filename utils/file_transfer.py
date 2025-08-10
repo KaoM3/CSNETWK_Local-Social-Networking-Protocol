@@ -1,6 +1,4 @@
 import os
-import base64
-import math
 from typing import Generator
 
 def chunk_file(filepath: str, chunk_size: int = 1024) -> Generator[bytes, None, None]:

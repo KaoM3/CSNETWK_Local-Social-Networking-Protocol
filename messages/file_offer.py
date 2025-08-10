@@ -124,6 +124,8 @@ class FileOffer(BaseMessage):
             client_logger.info(f"Sent chunk {i+1}/{self.total_chunks}")
             client_logger.send(f"{chunk_msg.payload}")
 
+        return dest
+
     @classmethod
     def receive(cls, raw: str) -> "FileOffer":
         received = cls.parse(msg_format.deserialize_message(raw))

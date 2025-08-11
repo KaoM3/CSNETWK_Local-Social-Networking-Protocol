@@ -84,32 +84,43 @@ class GroupCreate(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         """
-        Broadcast GROUP_CREATE to all peers.
-        NOTE: __init__ already created the group locally, so a strict
-        'drop if duplicate' here would always drop. We log and proceed to send;
-        receivers enforce uniqueness.
+        Broadcast GROUP_CREATE to everyone we can reach:
+        recipients = get_peers() ∪ MEMBERS ∪ {self}
+        We do NOT rely solely on get_peers() so members always get the create.
         """
-        # If you still want a log when it's already known locally:
-        if self.group_id in client_state.get_group_ids():
-            client_logger.debug(f"GROUP_CREATE '{self.group_id}' already known locally; broadcasting for peers.")
-
         msg = msg_format.serialize_message(self.payload)
-        last_ip = "0.0.0.0"
 
+        recipients: set[UserID] = set()
+
+        # 1) All known peers
         for peer in client_state.get_peers():
             try:
-                # Peer may be UserID or "name@ip" string
-                if hasattr(peer, "get_ip"):
-                    peer_ip = peer.get_ip()
-                else:
-                    p = str(peer)
-                    peer_ip = p.split("@", 1)[1] if "@" in p else p
-
-                socket.sendto(msg.encode(encoding), (peer_ip, port))
-                client_logger.debug(f"Sent GROUP_CREATE to peer {peer} at {peer_ip}:{port}")
-                last_ip = peer_ip
+                recipients.add(peer if isinstance(peer, UserID) else UserID.parse(str(peer)))
             except Exception as e:
-                client_logger.error(f"Error sending GROUP_CREATE to {peer}: {e}")
+                client_logger.error(f"Peer parse error ({peer}): {e}")
+
+        # 2) All members declared in the payload (so even non-peers get it)
+        try:
+            for m in msg_format.string_to_list(self.members):
+                recipients.add(UserID.parse(m))
+        except Exception as e:
+            client_logger.error(f"Members parse error: {e}")
+
+        # 3) Include self (loopback so we update via receive path too)
+        recipients.add(self.from_user)
+
+        last_ip = "0.0.0.0"
+        for uid in recipients:
+            try:
+                # Ensure a UserID, then resolve IP
+                if not isinstance(uid, UserID):
+                    uid = UserID.parse(str(uid))
+                dst_ip = uid.get_ip()
+                socket.sendto(msg.encode(encoding), (dst_ip, port))
+                client_logger.debug(f"Sent GROUP_CREATE to {uid} at {dst_ip}:{port}")
+                last_ip = dst_ip
+            except Exception as e:
+                client_logger.error(f"Error sending GROUP_CREATE to {uid}: {e}")
 
         return (last_ip, port)
 

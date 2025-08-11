@@ -57,7 +57,7 @@ def run_threads():
           new_peer_id = received_msg.from_user
           new_peer = client_state.add_peer(received_msg.from_user)
         elif hasattr(received_msg, "user_id"):
-          new_peer_id = received_msg.from_user
+          new_peer_id = received_msg.user_id
           new_peer = client_state.add_peer(received_msg.user_id)
         if new_peer is True:
           router.send_message(UNICAST_SOCKET, "PING", {}, new_peer_id.get_ip(), config.PORT)
@@ -78,7 +78,7 @@ def run_threads():
             new_peer_id = received_msg.from_user
             new_peer = client_state.add_peer(received_msg.from_user)
           elif hasattr(received_msg, "user_id"):
-            new_peer_id = received_msg.from_user
+            new_peer_id = received_msg.user_id
             new_peer = client_state.add_peer(received_msg.user_id)
           if new_peer is True:
             router.send_message(UNICAST_SOCKET, "PING", {}, new_peer_id.get_ip(), config.PORT)

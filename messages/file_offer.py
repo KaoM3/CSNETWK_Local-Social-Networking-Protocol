@@ -119,11 +119,17 @@ class FileOffer(BaseMessage):
 
         client.initialize_sockets(config.PORT)
         client_logger.process(f"Sending file chunks to {self.to_user}...")
+        start_time = time.time()
+        prev_time = start_time
         for i, chunk in enumerate(chunk_file(self.filepath, self.chunk_size)):
             chunk_msg = FileChunk(self.to_user, self.fileid, i, self.total_chunks, self.chunk_size, self.token, chunk)
             chunk_msg.send(client.get_unicast_socket())
             client_logger.debug(f"Sent chunk {i+1}/{self.total_chunks}")
             client_logger.send(f"{chunk_msg.payload}")
+            current_time = time.time()
+            if current_time - prev_time >= 3:
+                client_logger.process(f"completion {(i / self.total_chunks) * 100:.2f}%...")
+                prev_time = current_time
         client_logger.success(f"Sent all {self.total_chunks} chunks to {self.to_user}!")
 
         return dest

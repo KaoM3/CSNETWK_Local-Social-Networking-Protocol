@@ -1,4 +1,5 @@
 import os
+import time
 import base64
 import threading
 from typing import Dict, List, Optional
@@ -119,12 +120,18 @@ class FileState:
         
         # Combine chunks in order
         complete_data = b""
+        start_time = time.time()
+        prev_time = start_time
         client_logger.process("Combining file chunks...")
         for i in range(transfer.total_chunks):
             chunk = transfer.received_chunks[i]
             if chunk is None:
                 raise ValueError(f"Chunk at index {i} is missing or None.")
             complete_data += chunk
+            current_time = time.time()
+            if current_time - prev_time >= 3:
+                client_logger.process(f"completion {(i / self.total_chunks) * 100:.2f}%...")
+                prev_time = current_time
         client_logger.success("Combined all file chunks!")
 
         # Save to file

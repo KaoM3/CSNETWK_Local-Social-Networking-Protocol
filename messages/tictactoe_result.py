@@ -43,7 +43,9 @@ class TicTacToeResult(BaseMessage):
             "SYMBOL": self.symbol,
             "WINNING_LINE": self.winning_line,
             "TURN": self.turn,
+            "TIMESTAMP": self.timestamp,
             "TOKEN": self.token
+            
         }
 
     def __init__(self, to: UserID, gameid: str, result: str, symbol: str,

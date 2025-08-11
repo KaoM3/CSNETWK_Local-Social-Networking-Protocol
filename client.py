@@ -39,7 +39,8 @@ def run_threads():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(config.BUFSIZE)
       recv_queue.put((data, address))
-
+      return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+      client_logger.debug(f"RETURN PING: {return_ping.payload}")
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
 
   # Thread: message processor, consumes from queue and processes messages
@@ -51,16 +52,8 @@ def run_threads():
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         client_state.add_recent_message_received(received_msg)
-        new_peer = None
-        new_peer_id = None
-        if hasattr(received_msg, "from_user"):
-          new_peer_id = received_msg.from_user
-          new_peer = client_state.add_peer(received_msg.from_user)
-        elif hasattr(received_msg, "user_id"):
-          new_peer_id = received_msg.user_id
-          new_peer = client_state.add_peer(received_msg.user_id)
-        if new_peer is True:
-          router.send_message(UNICAST_SOCKET, "PING", {}, new_peer_id.get_ip(), config.PORT)
+        return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+        client_logger.debug(f"RETURN PING: {return_ping.payload}")
         interface.print_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
@@ -72,16 +65,6 @@ def run_threads():
         received_msg = router.recv_message(data, address)
         if received_msg is not None:
           client_state.add_recent_message_received(received_msg)
-          new_peer = None
-          new_peer_id = None
-          if hasattr(received_msg, "from_user"):
-            new_peer_id = received_msg.from_user
-            new_peer = client_state.add_peer(received_msg.from_user)
-          elif hasattr(received_msg, "user_id"):
-            new_peer_id = received_msg.user_id
-            new_peer = client_state.add_peer(received_msg.user_id)
-          if new_peer is True:
-            router.send_message(UNICAST_SOCKET, "PING", {}, new_peer_id.get_ip(), config.PORT)
           interface.print_message(received_msg)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")

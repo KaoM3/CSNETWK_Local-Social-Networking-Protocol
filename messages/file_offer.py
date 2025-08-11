@@ -144,7 +144,8 @@ class FileOffer(BaseMessage):
     
         client.initialize_sockets(config.PORT)
         ack = Ack(message_id=received.fileid)
-        ack.send(socket=client.get_unicast_socket(), ip=received.from_user.get_ip(), port=config.PORT)
+        dest = ack.send(socket=client.get_unicast_socket(), ip=received.from_user.get_ip(), port=config.PORT)
+        client_logger.debug(f"ACK SENT TO {dest}")
         
         new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
         file_state.add_pending_transfer(received.fileid, new_transfer)

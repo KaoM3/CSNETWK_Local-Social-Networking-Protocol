@@ -88,7 +88,7 @@ class FileState:
             self._validate_message_id(file_id)
             self._pending_transfers[file_id] = file
             self._recent = file_id
-            client_logger.debug(f"Accepted pending transfer file {file} with file_id {file_id}")
+            client_logger.debug(f"Added pending transfer file {file} with file_id {file_id}")
 
     def add_chunk(self, file_id: MessageID, chunk_index: int, chunk_data: str, total_chunks: int) -> bool:
         """Returns True if file is complete after adding chunk"""
@@ -109,7 +109,7 @@ class FileState:
                 transfer.set_total_chunks(total_chunks)
 
             decoded_data = base64.b64decode(chunk_data)
-            
+
             if transfer.received_chunks[chunk_index] is None:
                 transfer.received_chunks[chunk_index] = decoded_data
                 transfer.received_count += 1

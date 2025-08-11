@@ -209,13 +209,12 @@ class ClientState:
   def get_ack_message(self, message_id) -> "BaseMessage":
     with self._lock:
       self._validate_message_id(message_id)
-      for msg in self._recent_messages_received:
+      for msg in self._recent_messages_received + self._recent_messages_sent:
         try:
           if msg.type == "ACK" and message_id == msg.message_id:
             return msg
         except:
           continue
-      return None
     
   def get_message_by_id(self, message_id) -> "BaseMessage":
     with self._lock:

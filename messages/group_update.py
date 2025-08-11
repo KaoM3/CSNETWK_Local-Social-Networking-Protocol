@@ -20,125 +20,112 @@ class GroupUpdate(BaseMessage):
         "TYPE": TYPE,
         "FROM": {"type": UserID, "required": True},
         "GROUP_ID": {"type": str, "required": True},
-        "ADD": {"type": str, "required": True},
-        "REMOVE": {"type": str, "required": False},
+        "ADD": {"type": str, "required": False},      # <-- optional
+        "REMOVE": {"type": str, "required": False},   # <-- optional
         "TIMESTAMP": {"type": Timestamp, "required": True},
         "TOKEN": {"type": Token, "required": True},
     }
 
     @property
     def payload(self) -> dict:
-        return {
+        p = {
             "TYPE": self.TYPE,
             "FROM": self.from_user,
             "GROUP_ID": self.group_id,
-            "ADD": self.add,
-            "REMOVE": self.remove,
             "TIMESTAMP": self.timestamp,
             "TOKEN": self.token,
         }
-    
-    def __init__(self, group_id: str, add: str, remove: str = "", ttl: TTL = 3600):
+        if getattr(self, "add", None):
+            p["ADD"] = self.add
+        if getattr(self, "remove", None):
+            p["REMOVE"] = self.remove
+        return p
+
+    def __init__(self, group_id: str, add: str = "", remove: str = "", ttl: TTL = 3600):
         unix_now = int(datetime.now(timezone.utc).timestamp())
         self.type = self.TYPE
         self.from_user = client_state.get_user_id()
         self.group_id = group_id
-        self.add = add
-        self.remove = remove
+        self.add = add.strip()
+        self.remove = remove.strip()
         self.timestamp = Timestamp(unix_now)
         self.token = Token(self.from_user, self.timestamp + ttl, Token.Scope.GROUP)
 
-    @classmethod
-    def parse(cls, data: dict) -> "GroupUpdate":
-        new_obj = cls.__new__(cls)
-        new_obj.type = data["TYPE"]
-        new_obj.from_user = UserID.parse(data["FROM"])
-        new_obj.group_id = data["GROUP_ID"]
-        new_obj.add = data["ADD"]
-        new_obj.remove = data.get("REMOVE")
-        new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
-        new_obj.token = Token.parse(data["TOKEN"])
-        Token.validate_token(new_obj.token, expected_scope=Token.Scope.GROUP, expected_user_id=new_obj.from_user)
-
-        msg_format.validate_message(new_obj.payload, new_obj.__schema__)
-        return new_obj
-
-
     def send(self, sock: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
-        msg = msg_format.serialize_message(self.payload)
-
-        # --- Add new members ---
-        if hasattr(self, "add") and self.add:
-            group_members = msg_format.string_to_list(self.add)
-            for add_user in group_members:
+        # Update local state first
+        if self.add:
+            for u in msg_format.string_to_list(self.add):
                 try:
-                    client_state.add_group_member(self.group_id, UserID.parse(add_user))
+                    client_state.add_group_member(self.group_id, UserID.parse(u))
                 except ValueError as e:
-                    client_logger.error(f"Error adding member {add_user} to group {self.group_id}: {str(e)}")
+                    client_logger.error(f"Error adding {u} to {self.group_id}: {e}")
 
-        # --- Remove members ---
-        if hasattr(self, "remove") and self.remove:
-            remove_members = msg_format.string_to_list(self.remove)
-            for rem_user in remove_members:
+        if self.remove:
+            for u in msg_format.string_to_list(self.remove):
                 try:
-                    client_state.remove_group_member(self.group_id, UserID.parse(rem_user))
+                    client_state.remove_group_member(self.group_id, UserID.parse(u))
                 except ValueError as e:
-                    client_logger.error(f"Error removing member {rem_user} from group {self.group_id}: {str(e)}")
+                    client_logger.error(f"Error removing {u} from {self.group_id}: {e}")
 
-        # --- Send to all peers ---
-        for peer in client_state.get_peers():
+        # Compute recipients: (current members ∪ added) − removed − self
+        recipients = set(client_state.get_group_members(self.group_id) or [])
+        if self.add:
+            recipients |= {UserID.parse(u) for u in msg_format.string_to_list(self.add)}
+        if self.remove:
+            recipients -= {UserID.parse(u) for u in msg_format.string_to_list(self.remove)}
+        if self.from_user in recipients:
+            recipients.remove(self.from_user)
+
+        # Send to each recipient directly (even if not in peers)
+        sent = 0
+        for uid in recipients:
             try:
-                peer_ip = str(peer).split('@')[1]
-                sock.sendto(msg.encode(encoding), (peer_ip, port))
-                client_logger.debug(f"Sent group update message to peer {peer} at {peer_ip}:{port}")
+                dst_ip = uid.get_ip()
+                super().send(sock, dst_ip, port, encoding)  # uses same serialization consistently
+                client_logger.debug(f"Sent GROUP_UPDATE to {uid} at {dst_ip}:{port}")
+                sent += 1
             except Exception as e:
-                client_logger.error(f"Error sending to {peer} ({str(e)})")
+                client_logger.error(f"Failed sending GROUP_UPDATE to {uid}: {e}")
 
-        return (ip, port)
-
+        if sent == 0:
+            client_logger.warning(f"No recipients for GROUP_UPDATE {self.group_id} (nothing sent).")
+        return sent
 
     @classmethod
     def receive(cls, raw: str) -> "GroupUpdate":
         received = cls.parse(msg_format.deserialize_message(raw))
 
-        # --- Add members ---
-        if hasattr(received, "add") and received.add:
-            group_members = msg_format.string_to_list(received.add)
-            for member in group_members:
+        # Apply adds
+        if received.add:
+            for member in msg_format.string_to_list(received.add):
                 try:
                     client_state.add_group_member(received.group_id, UserID.parse(member))
                 except ValueError as e:
-                    client_logger.error(f"Error adding member {member} to group {received.group_id}: {str(e)}")
+                    client_logger.error(f"Add fail {member} -> {received.group_id}: {e}")
 
-        # --- Remove members ---
-        if hasattr(received, "remove") and received.remove:
-            remove_members_strs = msg_format.string_to_list(received.remove)  # handles commas/whitespace
+        # Apply removes
+        removed_self = False
+        if received.remove:
             current_user = client_state.get_user_id()
-            group_id = received.group_id
-
-            # Track if we removed the current user
-            removed_self = False
-
-            for m_str in remove_members_strs:
+            for m_str in msg_format.string_to_list(received.remove):
                 try:
-                    uid = UserID.parse(m_str)  # ensure same type for comparisons
-                    client_state.remove_group_member(group_id, uid)
+                    uid = UserID.parse(m_str)
+                    client_state.remove_group_member(received.group_id, uid)
                     if uid == current_user:
                         removed_self = True
                 except ValueError as e:
-                    client_logger.error(f"Error removing member {m_str} from group {group_id}: {e}")
+                    client_logger.error(f"Remove fail {m_str} -> {received.group_id}: {e}")
 
-            # If we (the current user) were removed, drop the whole group locally
-            if removed_self:
-                client_state.remove_group(group_id)
-                return received
-
-            # Otherwise, if the group is now empty, remove it
-            grp = client_state.get_group(group_id)  # see helper below
+        # Drop group locally if we were removed or the group is empty
+        if removed_self:
+            client_state.remove_group(received.group_id)
+        else:
+            grp = client_state.get_group(received.group_id)
             if grp is not None and not grp.get("members"):
-                client_state.remove_group(group_id)
+                client_state.remove_group(received.group_id)
 
         return received
+
 
 
 

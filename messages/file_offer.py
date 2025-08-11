@@ -100,6 +100,7 @@ class FileOffer(BaseMessage):
         retries = 0
         dest = ("failed", port)
         client_logger.process(f"Waiting for {self.to_user}")
+        client_state.add_recent_message_sent(self)
         while retries < 3:
             # Send message
             dest = super().send(socket, ip, port, encoding)
@@ -117,6 +118,7 @@ class FileOffer(BaseMessage):
         if client_state.get_ack_message(self.fileid) is None:
             client_logger.warn(f"No ACK received for file {self.fileid} after {retries} attempts.")
             client_logger.warn(f"Aborting FILE_OFFER.")
+            client_state.remove_recent_message_sent(self)
             return dest
 
         client.initialize_sockets(config.PORT)

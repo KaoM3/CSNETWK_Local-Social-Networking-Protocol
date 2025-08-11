@@ -183,6 +183,11 @@ class ClientState:
       self._validate_base_message(message)
       self._recent_messages_sent.append(message)
 
+  def remove_recent_message_sent(self, message: BaseMessage):
+    with self._lock:
+      self._validate_base_message(message)
+      self._recent_messages_sent.remove(message)
+
 
   def get_recent_messages_received(self) -> list:
     self.cleanup_expired_messages()

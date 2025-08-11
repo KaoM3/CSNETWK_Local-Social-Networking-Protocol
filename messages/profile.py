@@ -48,7 +48,6 @@ class Profile(BaseMessage):
   @classmethod
   def receive(cls, raw: str) -> "Profile":
     received = cls.parse(msg_format.deserialize_message(raw))
-    client_state.add_peer(received.user_id)
     client_state.update_peer_display_name(received.user_id, received.display_name)
     return received
   

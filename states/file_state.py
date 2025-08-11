@@ -57,12 +57,11 @@ class FileState:
 
             self._accepted_files.append(file_id)
             client_logger.debug(f"Accepted file transfer with file_id {file_id}")
-            try:
+            transfer = self.get_pending_transfers()[file_id]
+            if transfer.received_count == transfer.total_chunks and transfer.total_chunks > 0:
                 self._save_completed_file(file_id)
-            except ValueError:
-                client_logger.debug(f"Waiting for {file_id} to complete")
-            except Exception as e:
-                client_logger.error(f"Unexpected error completing {file_id}: {e}")
+            else:
+                client_logger.debug(f"File accepted, but not yet complete: {file_id}")
     
     def reject_file(self, file_id: MessageID = None):
         with self._lock:
@@ -160,13 +159,11 @@ class FileState:
             # Work on a copy since we may mutate the list during iteration
             for file_id in list(self._accepted_files):
                 if file_id in self._pending_transfers:
-                    try:
+                    transfer = self.get_pending_transfers()[file_id]
+                    if transfer.received_count == transfer.total_chunks and transfer.total_chunks > 0:
                         self._save_completed_file(file_id)
-                        completed_files.append(file_id)
-                    except ValueError:
+                    else:
                         client_logger.debug(f"Waiting for {file_id} to complete")
-                    except Exception as e:
-                        client_logger.error(f"Unexpected error completing {file_id}: {e}")
 
             if completed_files:
                 client_logger.debug(f"Completed file transfers: {completed_files}")

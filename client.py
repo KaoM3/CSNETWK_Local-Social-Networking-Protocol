@@ -54,8 +54,9 @@ def run_threads():
       new_peer = message.user_id
     elif hasattr(message, "from_user"):
       new_peer = message.from_user
-    if client_state.add_peer(new_peer):
-      sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+    client_logger.debug(f"new_peer = {new_peer}")
+    if new_peer is not None and client_state.add_peer(new_peer):
+      sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address, port)
       client_state.add_recent_message_sent(sent_ping)
       client_logger.debug(f"PING NEW PEER: {sent_ping}")
 

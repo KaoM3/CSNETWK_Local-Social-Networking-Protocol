@@ -39,6 +39,7 @@ class FileTransfer:
       f"filename='{self.filename}', "
       f"filesize={self.filesize}, "
       f"filetype='{self.filetype}', "
+      f"received_chunks='{self.received_count}', "
       f"total_chunks={self.total_chunks})"
     )
 

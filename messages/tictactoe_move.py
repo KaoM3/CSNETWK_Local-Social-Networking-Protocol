@@ -138,8 +138,6 @@ class TicTacToeMove(BaseMessage):
         winning_line = None
         if game_session_manager.is_winning_move(self.game_id):
             winning_line = game_session_manager.find_winning_line(self.game_id)
-            print(f"Player {self.symbol} wins the game {self.game_id}!")
-            print(f"Winning line: {winning_line}")
             result = TicTacToeResult(
                 to=self.from_user,
                 gameid=self.game_id,
@@ -169,7 +167,7 @@ class TicTacToeMove(BaseMessage):
         while retries < 3:
             # Send message
             dest = super().send(socket, ip, port, encoding)
-            client_logger.debug(f"Sent file chunk {self.message_id}, attempt {retries + 1}")
+            client_logger.debug(f"Sent tictactoe_move {self.message_id}, attempt {retries + 1}")
 
             # Wait a bit for ACK
             time.sleep(2)  # Lower this to 0.5 or 1 if latency is tight
@@ -181,7 +179,7 @@ class TicTacToeMove(BaseMessage):
             retries += 1
         if client_state.get_ack_message(self.message_id) is None:
             client_logger.warn(f"No ACK received for invite {self.message_id} after {retries} attempts.")
-            client_logger.warn(f"Aborting TICTACTOE_INVITE.")
+            client_logger.warn(f"Aborting TICTACTOE_MOVE.")
             client_state.remove_recent_message_sent(self)
             game.undo()
             return dest
@@ -193,7 +191,6 @@ class TicTacToeMove(BaseMessage):
         move_received = cls.parse(msg_format.deserialize_message(raw))
         if move_received.to_user != client_state.get_user_id():
             raise ValueError("Message is not intended to be received by this client")
-        print(f"Received move: {move_received.from_user} at position {move_received.position}")
 
         client.initialize_sockets(config.PORT)
 
@@ -225,8 +222,6 @@ class TicTacToeMove(BaseMessage):
         winning_line = None
         if game_session_manager.is_winning_move(move_received.game_id):
             winning_line = game_session_manager.find_winning_line(move_received.game_id)
-            print(f"Player {move_received.symbol} wins the game {move_received.game_id}!")
-            print(f"Winning line: {winning_line}")
             result = TicTacToeResult(
                 to=move_received.to_user,
                 gameid=move_received.game_id,
@@ -253,6 +248,12 @@ class TicTacToeMove(BaseMessage):
                         port=config.PORT)
 
         return move_received
+    
+    def info(self, verbose: bool = False) -> str:
+        if verbose:
+            return f"Turn {self.turn}:\n{game_session_manager.find_game(self.game_id).get_board_string()}\n{self.payload}"
+        else:
+            return f"Turn {self.turn}:\n{game_session_manager.find_game(self.game_id).get_board_string()}"
 
 
 

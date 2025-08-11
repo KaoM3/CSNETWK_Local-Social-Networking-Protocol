@@ -104,7 +104,7 @@ class FileOffer(BaseMessage):
         while retries < 3:
             # Send message
             dest = super().send(socket, ip, port, encoding)
-            client_logger.debug(f"Sent file chunk {self.fileid}, attempt {retries + 1}")
+            client_logger.debug(f"Send file_offer {self.fileid}, attempt {retries + 1}")
 
             # Wait a bit for ACK
             time.sleep(2)  # Lower this to 0.5 or 1 if latency is tight

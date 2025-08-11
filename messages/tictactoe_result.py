@@ -16,7 +16,7 @@ class TicTacToeResult(BaseMessage):
     """
 
     TYPE = "TICTACTOE_RESULT"
-    __hidden__ = False
+    __hidden__ = True
     __schema__ = {
         "TYPE": TYPE,
         "FROM": {"type": UserID, "required": True},
@@ -110,10 +110,6 @@ class TicTacToeResult(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Send game result to other player."""
-        msg = msg_format.serialize_message(self.payload)
-
-        print(f"Result sent to {self.to_user}: {self.result}")
-
         if ip == "default":
             ip = self.to_user.get_ip()
         return super().send(socket, ip, port, encoding)
@@ -127,5 +123,10 @@ class TicTacToeResult(BaseMessage):
         print(f"Received game result: {result_received.result} from {result_received.from_user}")
         return result_received
 
+    def info(self, verbose: bool = False) -> str:
+        if verbose:
+            return f"{self.payload}\n"
+        else:
+            return f"Player {self.symbol} wins the game {self.game_id}!\nWinning line: {self.winning_line}"
 
 __message__ = TicTacToeResult

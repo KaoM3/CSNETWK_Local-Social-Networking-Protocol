@@ -117,7 +117,7 @@ class TicTacToeInvite(BaseMessage):
         while retries < 3:
             # Send message
             dest = super().send(socket, ip, port, encoding)
-            client_logger.debug(f"Sent file chunk {self.message_id}, attempt {retries + 1}")
+            client_logger.debug(f"Send tictactoe_invite {self.message_id}, attempt {retries + 1}")
 
             # Wait a bit for ACK
             time.sleep(2)  # Lower this to 0.5 or 1 if latency is tight
@@ -145,9 +145,6 @@ class TicTacToeInvite(BaseMessage):
         if received_invite.to_user != client_state.get_user_id():
             raise ValueError("Message is not intended to be received by this client")
         
-        # Print invite information
-        print(f"{received_invite.from_user} invited you to play Tic-Tac-Toe.")
-        
         client.initialize_sockets(config.PORT)
         ack = Ack(message_id=received_invite.message_id)
         dest = ack.send(socket=client.get_unicast_socket(), ip=received_invite.from_user.get_ip(), port=config.PORT)
@@ -164,7 +161,11 @@ class TicTacToeInvite(BaseMessage):
 
         return received_invite
 
-
+    def info(self, verbose: bool = False) -> str:
+        if verbose:
+            return f"{self.payload}"
+        else:
+            return f"{self.from_user} invited you to play Tic-Tac-Toe."
 
 __message__ = TicTacToeInvite
 

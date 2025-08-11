@@ -134,7 +134,7 @@ class TicTacToeInvite(BaseMessage):
             game_session_manager.delete_game(self.game_id)
             client_state.remove_recent_message_sent(self)
             return dest
-        client_logger(self.info(verbose=False))
+        client_logger.info(self.info(verbose=False))
         return dest
 
 

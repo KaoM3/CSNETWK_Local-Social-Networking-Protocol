@@ -182,7 +182,7 @@ class TicTacToeMove(BaseMessage):
             client_state.remove_recent_message_sent(self)
             game.undo()
             return dest
-        client_logger(self.info(verbose=False))
+        client_logger.info(self.info(verbose=False))
         return dest
      
     @classmethod

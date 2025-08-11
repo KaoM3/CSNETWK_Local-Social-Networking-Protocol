@@ -154,8 +154,11 @@ class FileState:
             # Work on a copy since we may mutate the list during iteration
             for file_id in list(self._accepted_files):
                 if file_id in self._pending_transfers:
-                    self._save_completed_file(file_id)
-                    completed_files.append(file_id)
+                    try:
+                        self._save_completed_file(file_id)
+                        completed_files.append(file_id)
+                    except:
+                        client_logger.debug(f"Waiting for {file_id} to complete")
 
             if completed_files:
                 client_logger.debug(f"Completed file transfers: {completed_files}")

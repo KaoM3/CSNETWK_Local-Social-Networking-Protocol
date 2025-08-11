@@ -39,8 +39,9 @@ def run_threads():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(config.BUFSIZE)
       recv_queue.put((data, address))
-      return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
-      client_logger.debug(f"RETURN PING: {return_ping.payload}")
+      if address[0] != config.CLIENT_IP:  
+        return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+        client_logger.debug(f"RETURN PING: {return_ping.payload}")
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
 
   # Thread: message processor, consumes from queue and processes messages
@@ -52,8 +53,9 @@ def run_threads():
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
         client_state.add_recent_message_received(received_msg)
-        return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
-        client_logger.debug(f"RETURN PING: {return_ping.payload}")
+        if address[0] != config.CLIENT_IP:
+          return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+          client_logger.debug(f"RETURN PING: {return_ping.payload}")
         interface.print_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 

@@ -10,6 +10,7 @@ from states.client_state import client_state
 from messages.ack import Ack
 from messages.tictactoe_result import TicTacToeResult
 from states.game import game_session_manager
+from client_logger import client_logger
 import socket
 import config
 import client
@@ -78,7 +79,6 @@ class TicTacToeMove(BaseMessage):
         else:
             game_turn = game_session_manager.get_turn(game_id)
 
-        #game_session_manager.is_player(game_id, to)
         unix_now = int(datetime.now(timezone.utc).timestamp())
         
         self.type = self.TYPE
@@ -96,7 +96,6 @@ class TicTacToeMove(BaseMessage):
         new_obj = cls.__new__(cls)
         new_obj.type = data["TYPE"] 
         new_obj.from_user = UserID.parse(data["FROM"])
-        #game_session_manager.is_player(data["GAMEID"], data["TO"])
         new_obj.to_user = UserID.parse(data["TO"])
 
         new_obj.game_id = msg_format.check_game_id(data["GAMEID"])
@@ -113,18 +112,26 @@ class TicTacToeMove(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Sends game move to other player and updates game state"""
-        msg = msg_format.serialize_message(self.payload)
 
+        # Validate receiver is part of the game
+        game_session_manager.is_player(self.game_id, self.to_user)
 
+        # Get or create the game
         game = game_session_manager.find_game(self.game_id)
-        
         if not game:
-            game = game_session_manager.create_game(self.game_id)# Acknowledge the move
+            game = game_session_manager.create_game(self.game_id)
+            game_session_manager.assign_players(self.game_id, self.from_user, self.to_user)
 
-        game.move(self.from_user,self.position)
-        game.print_board()
-        
+        # Validate turn sync
+        if self.turn != game.turn:
+            raise ValueError(f"Turn mismatch: expected {game.turn}, got {self.turn}")
 
+        # Apply move
+        game.move(self.from_user, self.position)
+        client_logger.info(game.get_board_string())
+
+        # Check game result
+        winning_line = None
         if game_session_manager.is_winning_move(self.game_id):
             winning_line = game_session_manager.find_winning_line(self.game_id)
             print(f"Player {self.symbol} wins the game {self.game_id}!")
@@ -133,47 +140,64 @@ class TicTacToeMove(BaseMessage):
                 to=self.to_user,
                 gameid=self.game_id,
                 result="WIN",
-                symbol=self.symbol,
+                symbol=self.symbol,  
                 winning_line=winning_line,
                 turn=self.turn,
-            ) 
+            )
             result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
 
-        if game_session_manager.is_draw(self.game_id):
+        elif game_session_manager.is_draw(self.game_id):
             result = TicTacToeResult(
                 to=self.to_user,
                 gameid=self.game_id,
                 result="DRAW",
                 symbol=self.symbol,
-                winning_line=winning_line,
+                winning_line=None,
                 turn=self.turn,
-            ) 
+            )
             result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
 
+        # Default IP resolution
         if ip == "default":
             ip = self.to_user.get_ip()
+
         return super().send(socket, ip, port, encoding)
 
      
     @classmethod
     def receive(cls, raw: str) -> "TicTacToeMove":
         """Process received game move and update game state"""
-        move_received = cls.parse(msg_format.deserialize_message(raw))   
+        move_received = cls.parse(msg_format.deserialize_message(raw))
         print(f"Received move: {move_received.from_user} at position {move_received.position}")
 
         client.initialize_sockets(config.PORT)
+
+        # Acknowledge
         ack = Ack(message_id=move_received.message_id)
-        ack.send(socket=client.get_broadcast_socket(), ip=move_received.from_user.get_ip(), port=config.PORT)
+        ack.send(socket=client.get_broadcast_socket(),
+                ip=move_received.from_user.get_ip(),
+                port=config.PORT)
 
+        # Validate player
         game = game_session_manager.find_game(move_received.game_id)
-        
-
         if not game:
             game = game_session_manager.create_game(move_received.game_id)
+            game_session_manager.assign_players(
+                move_received.game_id, move_received.from_user, move_received.to_user
+            )
 
-        game.move(move_received.from_user,move_received.position)
-        game.print_board()
+        game_session_manager.is_player(move_received.game_id, move_received.from_user)
 
+        # Validate turn
+        if move_received.turn != game.turn:
+            raise ValueError(f"Turn mismatch: expected {game.turn}, got {move_received.turn}")
+
+        # Apply move
+        game.move(move_received.from_user, move_received.position)
+        client_logger.info(game.get_board_string())
+
+        # Check result
+        winning_line = None
         if game_session_manager.is_winning_move(move_received.game_id):
             winning_line = game_session_manager.find_winning_line(move_received.game_id)
             print(f"Player {move_received.symbol} wins the game {move_received.game_id}!")
@@ -185,23 +209,26 @@ class TicTacToeMove(BaseMessage):
                 symbol=move_received.symbol,
                 winning_line=winning_line,
                 turn=move_received.turn,
-            ) 
-            result.send(socket=client.get_broadcast_socket(), ip=move_received.to_user.get_ip(), port=config.PORT)
+            )
+            result.send(socket=client.get_broadcast_socket(),
+                        ip=move_received.to_user.get_ip(),
+                        port=config.PORT)
 
-        if game_session_manager.is_draw(move_received.game_id):
+        elif game_session_manager.is_draw(move_received.game_id):
             result = TicTacToeResult(
                 to=move_received.to_user,
                 gameid=move_received.game_id,
                 result="DRAW",
                 symbol=move_received.symbol,
-                winning_line=winning_line,
+                winning_line=None,
                 turn=move_received.turn,
-            ) 
-            result.send(socket=client.get_broadcast_socket(), ip=move_received.to_user.get_ip(), port=config.PORT)
-            
-            
+            )
+            result.send(socket=client.get_broadcast_socket(),
+                        ip=move_received.to_user.get_ip(),
+                        port=config.PORT)
 
         return move_received
+
 
 
 

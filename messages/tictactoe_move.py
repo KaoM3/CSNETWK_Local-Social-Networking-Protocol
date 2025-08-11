@@ -137,7 +137,7 @@ class TicTacToeMove(BaseMessage):
             print(f"Player {self.symbol} wins the game {self.game_id}!")
             print(f"Winning line: {winning_line}")
             result = TicTacToeResult(
-                to=self.to_user,
+                to=self.from_user,
                 gameid=self.game_id,
                 result="WIN",
                 symbol=self.symbol,  
@@ -148,7 +148,7 @@ class TicTacToeMove(BaseMessage):
 
         elif game_session_manager.is_draw(self.game_id):
             result = TicTacToeResult(
-                to=self.to_user,
+                to=self.from_user,
                 gameid=self.game_id,
                 result="DRAW",
                 symbol=self.symbol,

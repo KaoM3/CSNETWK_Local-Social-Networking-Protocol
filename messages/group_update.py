@@ -85,8 +85,8 @@ class GroupUpdate(BaseMessage):
             recipients -= {UserID.parse(u) for u in msg_format.string_to_list(self.remove)}
 
         # - self
-        if self.from_user in recipients:
-            recipients.remove(self.from_user)
+        #if self.from_user in recipients:
+            #recipients.remove(self.from_user)
 
         # Serialize once
         msg = msg_format.serialize_message(self.payload)
@@ -128,6 +128,14 @@ class GroupUpdate(BaseMessage):
             add_members=add_members,
             remove_members=remove_members
         )
+        
+        # If *this* client was removed, drop the entire group locally
+        me = client_state.get_user_id()
+        if any(u == me for u in remove_members):
+            try:
+                client_state.remove_group(received.group_id)
+            except Exception:
+                pass
 
         return received
 

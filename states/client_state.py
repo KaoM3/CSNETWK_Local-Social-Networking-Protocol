@@ -70,7 +70,6 @@ class ClientState:
 
       return expired_messages
 
-
   def get_user_id(self):
     with self._lock:
       self._validate_user_id(self._user_id)
@@ -97,9 +96,12 @@ class ClientState:
         self._peers.remove(peer)
         client_logger.debug(f"Removed peer: {peer}")
 
-  def get_peers(self) -> list[UserID]:
+  def get_peer_by_ip(self, ip: str) -> UserID:
     with self._lock:
-      return self._peers
+      for peer in self._peers:
+        if peer.get_ip() == ip:
+          return peer
+      return None
 
   def update_peer_display_name(self, peer: UserID, display_name: str):
     with self._lock:

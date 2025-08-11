@@ -39,38 +39,39 @@ def run_threads():
     while True:
       data, address = UNICAST_SOCKET.recvfrom(config.BUFSIZE)
       recv_queue.put((data, address))
-      if address[0] != config.CLIENT_IP:  
-        return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
-        client_logger.debug(f"RETURN PING: {return_ping.payload}")
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
 
-  # Thread: message processor, consumes from queue and processes messages
   def broadcast_receive_loop():
     client_logger.debug("INIT THREAD: broadcast_receive_loop()")
     while True:
       data, address = BROADCAST_SOCKET.recvfrom(config.BUFSIZE)
-      #client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
-      received_msg = router.recv_message(data, address)
-      if received_msg is not None:
-        client_state.add_recent_message_received(received_msg)
-        if address[0] != config.CLIENT_IP:
-          return_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
-          client_logger.debug(f"RETURN PING: {return_ping.payload}")
-        interface.print_message(received_msg)
+      recv_queue.put((data, address))
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
-  def unicast_process_loop():
+  def add_peer_if_none(message, address, port):
+    new_peer = None
+    if hasattr(message, "user_id"):
+      new_peer = message.user_id
+    elif hasattr(message, "from_user"):
+      new_peer = message.from_user
+    if client_state.add_peer(new_peer):
+      sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+      client_state.add_recent_message_sent(sent_ping)
+      client_logger.debug(f"PING NEW PEER: {sent_ping}")
+
+  def message_process_loop():
     client_logger.debug("INIT THREAD: unicast_process_loop()")
     while True:
       data, address = recv_queue.get()  # blocks until item available
       try:
         received_msg = router.recv_message(data, address)
         if received_msg is not None:
-          client_state.add_recent_message_received(received_msg)
+          client_state.add_recent_message_received(received_msg)           
+          add_peer_if_none(received_msg, address[0], address[1]) 
           interface.print_message(received_msg)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")
-  threading.Thread(target=unicast_process_loop, daemon=True).start()
+  threading.Thread(target=message_process_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():
@@ -87,8 +88,8 @@ def run_threads():
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
   def update_states():
+    client_logger.debug("INIT THREAD: update_states()")
     while True:
-      client_logger.debug("Updating states...")
       expired_messages = client_state.cleanup_expired_messages()
       file_state.complete_transfers()
       expired_file_offer_ids = []
@@ -98,6 +99,19 @@ def run_threads():
       file_state.remove_transfers(expired_file_offer_ids)
       time.sleep(5)
   threading.Thread(target=update_states, daemon=True).start()
+
+  def keep_alive():
+    client_logger.debug("INIT THREAD: keep_alive()")
+    while True:
+      for user in client_state.get_peers():
+        try:
+          sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, user.get_ip(), config.PORT)
+          client_state.add_recent_message_sent(sent_ping)
+          client_logger.debug(f"RE-PING PEER: {sent_ping}")
+        except:
+          continue
+      time.sleep(config.KEEP_ALIVE)
+  threading.Thread(target=keep_alive, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE

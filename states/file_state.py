@@ -155,7 +155,6 @@ class FileState:
 
     def complete_transfers(self):
         with self._lock:
-            client_logger.debug("Completing accepted transfers...")
             completed_files = []
 
             # Work on a copy since we may mutate the list during iteration

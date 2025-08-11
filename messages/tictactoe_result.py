@@ -120,13 +120,12 @@ class TicTacToeResult(BaseMessage):
         result_received = cls.parse(msg_format.deserialize_message(raw))
         if result_received.to_user != client_state.get_user_id():
             raise ValueError("Message is not intended to be received by this client")
-        print(f"Received game result: {result_received.result} from {result_received.from_user}")
         return result_received
 
     def info(self, verbose: bool = False) -> str:
         if verbose:
             return f"{self.payload}\n"
         else:
-            return f"Player {self.symbol} wins the game {self.game_id}!\nWinning line: {self.winning_line}"
+            return f"Received game result: {self.result} from {self.from_user}\nPlayer {self.symbol} wins the game {self.game_id}!\nWinning line: {self.winning_line}"
 
 __message__ = TicTacToeResult

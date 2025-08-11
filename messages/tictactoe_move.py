@@ -132,7 +132,6 @@ class TicTacToeMove(BaseMessage):
 
         # Apply move
         game.move(self.from_user, self.position)
-        client_logger.info(game.get_board_string())
 
         # Check game result
         winning_line = None
@@ -216,7 +215,6 @@ class TicTacToeMove(BaseMessage):
 
         # Apply move
         game.move(move_received.from_user, move_received.position)
-        client_logger.info(game.get_board_string())
 
         # Check result
         winning_line = None

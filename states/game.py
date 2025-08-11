@@ -66,8 +66,8 @@ class GameState:
             self.prev_state
         )
         # Validate player and turn
-        #if user_id not in [self.player_x, self.player_o]:
-            #raise ValueError(f"User {user_id} is not a player in this game")
+        if user_id not in [self.player_x, self.player_o]:
+            raise ValueError(f"User {user_id} is not a player in this game")
 
         if user_id == self.player_x:
             if self.turn % 2 != 1:
@@ -251,8 +251,8 @@ class GameSessionManager:
         if not game:
             raise ValueError(f"Game with ID '{game_id}' does not exist.")
 
-        #if user_id not in (game.player_x, game.player_o):
-            #raise ValueError(f"User '{user_id}' is not a player in game '{game_id}'.")
+        if user_id not in (game.player_x, game.player_o):
+            raise ValueError(f"User '{user_id}' is not a player in game '{game_id}'.")
 
         return True
 

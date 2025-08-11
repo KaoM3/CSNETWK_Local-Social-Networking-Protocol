@@ -67,9 +67,15 @@ def run_threads():
       try:
         received_msg = router.recv_message(data, address)
         if received_msg is not None:
-          client_state.add_recent_message_received(received_msg)           
-          #add_peer_if_none(received_msg, address[0], address[1]) 
+          client_state.add_recent_message_received(received_msg)
           interface.print_message(received_msg)
+          #add_peer_if_none(received_msg, address[0], address[1]) 
+          new_peer = None
+          if hasattr(received_msg, "user_id"):
+            new_peer = received_msg.user_id
+          elif hasattr(received_msg, "from_user"):
+            new_peer = received_msg.from_user       
+          client_state.add_peer(new_peer)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")
   threading.Thread(target=message_process_loop, daemon=True).start()

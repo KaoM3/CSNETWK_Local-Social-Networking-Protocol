@@ -84,6 +84,7 @@ def run_threads():
 
   def update_states():
     while True:
+      client_logger.debug("Updating states...")
       expired_messages = client_state.cleanup_expired_messages()
       file_state.complete_transfers()
       expired_file_offer_ids = []

@@ -47,17 +47,17 @@ class FileState:
                 file_id = self._recent
             else:
                 raise ValueError("No file transfers to accept")
+
             self._validate_message_id(file_id)
             if file_id not in self._pending_transfers.keys():
                 raise ValueError("No pending file offers to accept")
+
             self._accepted_files.append(file_id)
             client_logger.debug(f"Accepted file transfer with file_id {file_id}")
-            if self.is_file_accepted(file_id):
-                try:
-                    self._save_completed_file(file_id)
-                    client_logger.info(f"File transfer complete!")
-                except ValueError:
-                    client_logger.debug(f"File transfer ongoing.")
+            try:
+                self._save_completed_file(file_id)
+            except:
+                client_logger.info("Waiting to finish file transfer")
     
     def reject_file(self, file_id: MessageID = None):
         with self._lock:
@@ -130,7 +130,7 @@ class FileState:
             complete_data += chunk
             current_time = time.time()
             if current_time - prev_time >= 3:
-                client_logger.process(f"completion {(i / self.total_chunks) * 100:.2f}%...")
+                client_logger.process(f"completion {(i / transfer.total_chunks) * 100:.2f}%...")
                 prev_time = current_time
         client_logger.success("Combined all file chunks!")
 
@@ -148,6 +148,7 @@ class FileState:
 
     def complete_transfers(self):
         with self._lock:
+            client_logger.debug("Completing accepted transfers...")
             completed_files = []
 
             # Work on a copy since we may mutate the list during iteration

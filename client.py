@@ -126,15 +126,22 @@ def main():
   run_threads()
   
   # Main Program Loop
+  valid_message_commands = []
+  for key in router.MESSAGE_REGISTRY:
+    msg_class = router.MESSAGE_REGISTRY[key]
+    if msg_class.__hidden__ == False:
+      valid_message_commands.append(key)
+
   user_details = []
   user_details.append(f"WELCOME \"{client_state.get_user_id()}\"!")
   user_details.append(f"Using port: {config.PORT}")
   user_details.append(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
   user_details.append(f"Broadcast IP: {config.BROADCAST_IP}")
   client_logger.info(interface.format_prompt(user_details))
-  interface.display_help(router.MESSAGE_REGISTRY)
+  interface.display_help(valid_message_commands)
+
   while True:
-    user_input = interface.get_command(router.MESSAGE_REGISTRY)
+    user_input = interface.get_command(valid_message_commands)
     if user_input in router.MESSAGE_REGISTRY:
       try:
         msg = router.MESSAGE_REGISTRY.get(user_input)

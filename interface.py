@@ -24,10 +24,10 @@ def format_prompt(lines: list):
     result += f"{line}\n"
   return result + "\n"
 
-def display_help(message_registry: dict):
+def display_help(valid_commands: list):
   help_prompt = []
   help_prompt.append("Available Message Commands:")
-  for value in message_registry.keys():
+  for value in valid_commands:
     if len(value) < 7:
       help_prompt.append(f"{value.lower()}:\t\tsend a new {value} message")
     else:
@@ -87,18 +87,17 @@ def toggle_verbose():
     client_logger.set_verbose(config.VERBOSE)
   client_logger.info(f"Verbose mode set to {config.VERBOSE}")
 
-def get_command(message_registry: dict):
-  valid_commands = message_registry.keys
+def get_command(valid_msg_commands: list):
   while True:
     command = input().upper().strip()
-    if command in valid_commands():
+    if command in valid_msg_commands:
       return command
     elif command == "":
       continue
     elif command == "VERBOSE":
       toggle_verbose()
     elif command == "HELP":
-      display_help(message_registry)
+      display_help(valid_msg_commands)
     elif command == "CLS":
       clear_screen()
     elif command == "INFO":

@@ -23,7 +23,10 @@ def get_file_info(filepath: str) -> tuple[str, int, str]:
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg', 
         '.png': 'image/png',
-        '.gif': 'image/gif'
+        '.gif': 'image/gif',
+        '.mp3': 'audio/mpeg',
+        '.mp4': 'video/mp4',
+        '.wav': 'audio/wav'
     }
     filetype = filetypes.get(ext, 'application/octet-stream')
     

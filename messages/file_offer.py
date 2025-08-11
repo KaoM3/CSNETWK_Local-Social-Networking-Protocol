@@ -3,7 +3,7 @@ from custom_types.fields import UserID, Token, Timestamp, TTL, MessageID
 from custom_types.file_transfer import FileTransfer
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
-from utils.file_transfer import chunk_file, get_file_info
+from utils.msg_file_transfer import chunk_file, get_file_info
 from utils import msg_format
 import socket
 from client_logger import client_logger

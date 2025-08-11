@@ -51,10 +51,13 @@ def run_threads():
         received_msg = router.recv_message(data, address)
         if received_msg is not None:
           client_state.add_recent_message_received(received_msg)
+          if hasattr(received_msg, "from_user"):
+            client_state.add_peer(received_msg.from_user)
+          elif hasattr(received_msg, "user_id"):
+            client_state.add_peer(received_msg.user_id)
           interface.print_message(received_msg)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")
-
   threading.Thread(target=unicast_process_loop, daemon=True).start()
   
   def broadcast_receive_loop():
@@ -66,7 +69,7 @@ def run_threads():
       if received_msg is not None:
         client_state.add_recent_message_received(received_msg)
         interface.print_message(received_msg)
-  threading.Thread(target=broadcast_receive_loop, daemon=True).start()
+  #threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():

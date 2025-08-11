@@ -95,6 +95,10 @@ class ClientState:
         self._peers.remove(peer)
         client_logger.debug(f"Removed peer: {peer}")
 
+  def get_peers(self) -> list[UserID]:
+    with self._lock:
+      return self._peers
+
   def update_peer_display_name(self, peer: UserID, display_name: str):
     with self._lock:
       self._validate_user_id(peer)

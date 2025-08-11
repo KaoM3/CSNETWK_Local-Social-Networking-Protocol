@@ -44,5 +44,11 @@ class Ack(BaseMessage):
     def receive(cls, raw: str) -> "Ack":
         received = cls.parse(msg_format.deserialize_message(raw))
         return received
+    
+    def info(self, verbose: bool = False) -> str:
+        if verbose:
+            return f"{self.payload}"
+        else:
+            return ""
 
 __message__ = Ack

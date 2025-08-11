@@ -41,17 +41,20 @@ class ClientState:
     if not isinstance(data, MessageID):
         raise ValueError(f"ERROR: {data} is not of type MessageID")
     
-  def cleanup_expired_messages(self):
+  def cleanup_expired_messages(self) -> list[BaseMessage]:
     with self._lock:
       now = int(time.time())
       valid_messages = []
+      expired_messages = []
       for msg in self._recent_messages:
         token = getattr(msg, "token", None)
         if token is None or token.valid_until > now:
           valid_messages.append(msg)
         else:
           client_logger.debug(f"EXPIRED: {msg}")
+          expired_messages.append(msg)
       self._recent_messages = valid_messages
+      return expired_messages
 
   def get_user_id(self):
     with self._lock:

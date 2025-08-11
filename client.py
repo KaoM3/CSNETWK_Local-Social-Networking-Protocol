@@ -9,6 +9,7 @@ import inspect
 import interface
 import traceback
 from states.client_state import client_state
+from states.file_state import file_state
 from client_logger import client_logger
 from queue import Queue
 
@@ -76,11 +77,17 @@ def run_threads():
       time.sleep(config.PING_INTERVAL)
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
-  def cleanup_expired_messages():
+  def update_states():
     while True:
-      client_state.cleanup_expired_messages()
+      expired_messages = client_state.cleanup_expired_messages()
+      file_state.complete_transfers()
+      expired_file_offer_ids = []
+      for msg in expired_messages:
+        if msg.type == "FILE_OFFER":
+          expired_file_offer_ids.append(msg.fileid)
+      file_state.remove_transfers(expired_file_offer_ids)
       time.sleep(5)
-  threading.Thread(target=cleanup_expired_messages, daemon=True).start()
+  threading.Thread(target=update_states, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE

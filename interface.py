@@ -4,6 +4,7 @@ import inspect
 from custom_types.fields import UserID, Token, Timestamp, TTL
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from states.file_state import file_state
 from client_logger import client_logger
 
 type_parsers = {
@@ -35,6 +36,8 @@ def display_help(message_registry: dict):
   help_prompt.append("\nAdditional Commands:")
   help_prompt.append("info:\t\tshows client details")
   help_prompt.append("recent:\t\tshows received messages")
+  help_prompt.append("accept:\t\taccepts a received file_offer")
+  help_prompt.append("reject:\t\trejects a received file_offer")
   help_prompt.append("verbose:\ttoggles verbose mode settings")
   help_prompt.append("cls:\t\tclears the screen")
   help_prompt.append("help:\t\tshows available commands")
@@ -42,6 +45,39 @@ def display_help(message_registry: dict):
   help_prompt.append("ctrl^c:\t\taborts message creation")
   client_logger.info(format_prompt(help_prompt))
 
+def debug_info():
+  config_info = []
+  client_state_info = []
+  file_state_info = []
+
+  config_info.append("CONFIG VARIABLES\n")
+  config_info.append(f"PING_INTERVAL: {config.PING_INTERVAL}")
+  config_info.append(f"PORT: {config.PORT}")
+  config_info.append(f"SUBNET_MASK: {config.SUBNET_MASK}")
+  config_info.append(f"ENCODING: {config.ENCODING}")
+  config_info.append(f"CLIENT_IP: {config.CLIENT_IP}")
+  config_info.append(f"BROADCAST_IP: {config.BROADCAST_IP}")
+  config_info.append(f"VERBOSE: {config.VERBOSE}")
+  config_info.append(f"DEFAULT_TTL: {config.DEFAULT_TTL}")
+  config_info.append(f"MESSAGES_DIR: {config.MESSAGES_DIR}")
+  config_info.append(f"BUFSIZE: {config.BUFSIZE}")
+
+  client_state_info.append("CLIENT_STATE VARIABLES\n")
+  client_state_info.append(f"UserID: {client_state.get_user_id()}")
+  client_state_info.append(f"Peers: {client_state.get_peers()}")
+  client_state_info.append(f"Peer display names: {client_state.get_peer_display_names()}")
+  client_state_info.append(f"Followers: {client_state.get_followers()}")
+  client_state_info.append(f"Following: {client_state.get_following()}")
+
+  file_state_info.append("FILE_STATE VARIABLES\n")
+  file_state_info.append(f"Recent: {file_state.get_recent()}")
+  file_state_info.append(f"Accepted Files: {file_state.get_accepted_files()}")
+  file_state_info.append(f"Pending Transfers: {file_state.get_pending_transfers()}")
+
+  client_logger.info(format_prompt(config_info))
+  client_logger.info(format_prompt(client_state_info))
+  client_logger.info(format_prompt(file_state_info))
+  
 def toggle_verbose():
   if config.VERBOSE:
     config.VERBOSE = False
@@ -69,11 +105,22 @@ def get_command(message_registry: dict):
       show_client_details()
     elif command == "RECENT":
       show_recent_messages()
+    elif command == "ACCEPT":
+      try:
+        file_state.accept_file()
+      except Exception as e:
+        client_logger.warn(e)
+    elif command == "REJECT":
+      try:
+        file_state.reject_file()
+      except Exception as e:
+        client_logger.warn(e)
+    elif command == "DEBUG":
+      debug_info()
     elif command == "EXIT":
       return None
     else:
       client_logger.warn(f"Command {command} is not valid. Enter help for list of commands.")
-    
 
 def print_message(msg_obj: BaseMessage):
   """
@@ -91,7 +138,7 @@ def show_recent_messages():
       client_logger.info(msg_info)
 
 def show_client_details():
-  client_logger.info(f"UserID: \"{client_state.get_user_id()}\"!")
+  client_logger.info(f"UserID: {client_state.get_user_id()}")
   client_logger.info(f"Using port: {config.PORT}")
   client_logger.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
   client_logger.info(f"Broadcast IP: {config.BROADCAST_IP}")

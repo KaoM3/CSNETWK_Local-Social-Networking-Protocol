@@ -2,6 +2,7 @@ from custom_types.fields import UserID, Token, MessageID
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
 from states.file_state import file_state
+from client_logger import client_logger
 from messages.file_received import FileReceived
 from utils import msg_format
 import socket
@@ -79,9 +80,6 @@ class FileChunk(BaseMessage):
         if received.to_user != client_state.get_user_id():
             raise ValueError("Message is not intended for this client")
 
-        if not file_state.is_file_accepted(received.fileid):
-            raise ValueError("File transfer was not accepted")
-        
         # Add chunk and check if complete
         is_complete = file_state.add_chunk(
             received.fileid,
@@ -91,8 +89,7 @@ class FileChunk(BaseMessage):
         )
 
         if is_complete:
-            from client_logger import client_logger
-            client_logger.info(f"File transfer complete!")
+            client_logger.debug(f"ALL CHUNKS RECEIVED")
             client.initialize_sockets(config.PORT)
             socket = client.get_unicast_socket()
             new_msg = FileReceived(received.to_user, received.fileid)

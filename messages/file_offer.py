@@ -121,7 +121,7 @@ class FileOffer(BaseMessage):
         for i, chunk in enumerate(chunk_file(self.filepath, self.chunk_size)):
             chunk_msg = FileChunk(self.to_user, self.fileid, i, self.total_chunks, self.chunk_size, self.token, chunk)
             chunk_msg.send(client.get_unicast_socket())
-            client_logger.info(f"Sent chunk {i+1}/{self.total_chunks}")
+            client_logger.debug(f"Sent chunk {i+1}/{self.total_chunks}")
             client_logger.send(f"{chunk_msg.payload}")
 
         return dest
@@ -135,24 +135,15 @@ class FileOffer(BaseMessage):
         client.initialize_sockets(config.PORT)
         ack = Ack(message_id=received.fileid)
         ack.send(socket=client.get_unicast_socket(), ip=received.from_user.get_ip(), port=config.PORT)
-
-        # Ask user if they want to accept
-        #client_logger.info("Someone wants to send you a file! (press enter)")
-        #response = client_logger.queue_input(f"User {received.from_user} is sending you a file do you accept? (y/n): ").lower()
-        #if response == 'y':
-        #    new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
-        #    file_state.add_pending_transfer(received.fileid, new_transfer)
-        #    file_state.accept_file(received.fileid)
         
         new_transfer = FileTransfer(received.filename, received.filesize, received.filetype)
         file_state.add_pending_transfer(received.fileid, new_transfer)
-        file_state.accept_file(received.fileid)
 
         return received
 
     def info(self, verbose: bool = False) -> str:
         if verbose:
             return f"{self.payload}"
-        return ""
+        return f"User {self.from_user} is sending you a file do you accept?"
 
 __message__ = FileOffer

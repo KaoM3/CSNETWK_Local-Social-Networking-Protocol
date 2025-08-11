@@ -2,13 +2,14 @@ import socket
 import config
 import threading
 import argparse
-import log
 import time
+import ipaddress
 import router
+import inspect
 import interface
 import traceback
 from states.client_state import client_state
-from custom_types.user_id import UserID
+from client_logger import client_logger
 
 UNICAST_SOCKET = None
 BROADCAST_SOCKET = None
@@ -30,36 +31,53 @@ def initialize_sockets(port):
 def run_threads():
   # Concurrent Thread for receiving unicast messages
   def unicast_receive_loop():
+    client_logger.debug("INIT THREAD: unicast_receive_loop()")
     while True:
       data, address = UNICAST_SOCKET.recvfrom(1024)
-      log.info("UNICAST RECEIVED")
+      client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
+        client_state.add_recent_message_received(received_msg)
         interface.print_message(received_msg)
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
   
   def broadcast_receive_loop():
+    client_logger.debug("INIT THREAD: broadcast_receive_loop()")
     while True:
       data, address = BROADCAST_SOCKET.recvfrom(1024)
-      log.info("BROADCAST RECEIVED")
+      client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
+        client_state.add_recent_message_received(received_msg)
         interface.print_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():
+    client_logger.debug("INIT THREAD: broadcast_presence()")
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      router.send_message(BROADCAST_SOCKET, "PING", {"user_id": UserID.parse(f"{client_state.get_user_id()}")}, config.BROADCAST_IP, config.PORT)
-      time.sleep(config.PING_INTERVAL)
+      try:
+        sent_ping = router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
+        if sent_ping is not None:
+          client_state.add_recent_message_sent(sent_ping)
+        time.sleep(config.PING_INTERVAL)
+      except:
+        client_logger.error("Error occurred in thread <BROADCAST_PRESENCE>:\n" + traceback.format_exc())
   threading.Thread(target=broadcast_presence, daemon=True).start()
+
+  def cleanup_expired_messages():
+    while True:
+      client_state.cleanup_expired_messages()
+      time.sleep(5)
+  threading.Thread(target=cleanup_expired_messages, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE
   parser = argparse.ArgumentParser()
   parser.add_argument("--port", type=int, help="Port number to use")
-  parser.add_argument("--subnet", type=int, help="Subnet Mask of the network")
+  parser.add_argument("--subnet", type=int, help="Subnet Mask of the network in prefix form")
+  parser.add_argument("--ipaddress", type=str, help="Ip address of the network")
   parser.add_argument("--verbose", action="store_true", help="Enable verbose mode")
   args = parser.parse_args()
 
@@ -70,9 +88,13 @@ def main():
     config.SUBNET_MASK = args.subnet
   if args.verbose:
     config.VERBOSE = args.verbose
+  if args.ipaddress:
+    ip_override = ipaddress.ip_address(args.ipaddress)
+    config.CLIENT_IP = str(ip_override)
+    config.BROADCAST_IP = config.get_broadcast_ip(config.SUBNET_MASK)
 
   # Setup logging with verbose flag
-  log.setup_logging(config.VERBOSE)
+  client_logger.set_verbose(config.VERBOSE)
 
   # Socket initialization
   initialize_sockets(config.PORT)
@@ -87,20 +109,28 @@ def main():
   run_threads()
   
   # Main Program Loop
+  user_details = []
+  user_details.append(f"WELCOME \"{client_state.get_user_id()}\"!")
+  user_details.append(f"Using port: {config.PORT}")
+  user_details.append(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
+  user_details.append(f"Broadcast IP: {config.BROADCAST_IP}")
+  client_logger.info(interface.format_prompt(user_details))
+  interface.display_help(router.MESSAGE_REGISTRY)
   while True:
-    log.info(f"WELCOME \"{client_state.get_user_id()}\"!")
-    log.info(f"Using port: {config.PORT}")
-    log.info(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
-    log.info(f"Broadcast IP: {config.BROADCAST_IP}")
-    user_input = interface.get_message_type(router.MESSAGE_REGISTRY)
+    user_input = interface.get_command(router.MESSAGE_REGISTRY)
     if user_input in router.MESSAGE_REGISTRY:
       try:
         msg = router.MESSAGE_REGISTRY.get(user_input)
-        new_msg = interface.create_message(msg.__schema__)
-        ip_input = input("Enter dest ip: ")
-        router.send_message(UNICAST_SOCKET, user_input, new_msg, ip_input, config.PORT)
-      except Exception as e:
-        log.error("An error occurred:\n" + traceback.format_exc())
+        msg_constructor_args = inspect.signature(msg.__init__)
+        new_msg_args = interface.get_func_args(msg_constructor_args)
+        if new_msg_args is None:
+          continue
+        dest_ip = "default"
+        sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg_args, dest_ip, config.PORT)
+        if sent_msg is not None:
+          client_state.add_recent_message_sent(sent_msg)
+      except Exception:
+        client_logger.error("Error occurred in <MAIN>:\n" + traceback.format_exc())
     elif user_input is None:
       break
 

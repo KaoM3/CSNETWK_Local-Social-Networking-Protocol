@@ -1,9 +1,9 @@
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID, Token, Timestamp, MessageID, TTL
 from datetime import datetime, timezone
 from utils import msg_format
 from custom_types.base_message import BaseMessage
 from states.client_state import client_state
+from client_logger import client_logger
 import socket
 
 class Post(BaseMessage):
@@ -12,12 +12,15 @@ class Post(BaseMessage):
   """
 
   TYPE = "POST"
+  SCOPE = Token.Scope.BROADCAST
   __hidden__ = False
   __schema__ = {
     "TYPE": TYPE,
-    "USER_ID": {"type": UserID, "required": True, "input": True},
-    "CONTENT": {"type": str, "required": True, "input": True},
-    "MESSAGE_ID": {"type": str, "required": True},
+    "USER_ID": {"type": UserID, "required": True},
+    "CONTENT": {"type": str, "required": True},
+    "TTL": {"type": TTL, "required": True},
+    "TIMESTAMP": {"type": Timestamp, "required": True},
+    "MESSAGE_ID": {"type": MessageID, "required": True},
     "TOKEN": {"type": Token, "required": True},
   }
 
@@ -27,63 +30,66 @@ class Post(BaseMessage):
       "TYPE": self.TYPE,
       "USER_ID": self.user_id,
       "CONTENT": self.content,
+      "TTL": self.ttl,
+      "TIMESTAMP": self.timestamp,
       "MESSAGE_ID": self.message_id,
       "TOKEN": self.token,
     }
 
-  def __init__(self, user_id: UserID, content: str, ttl: int = 3600):
+  def __init__(self, content: str, ttl: TTL = 3600):
     unix_now = int(datetime.now(timezone.utc).timestamp())
     self.type = self.TYPE
-    self.user_id = user_id
+    self.user_id = client_state.get_user_id()
     self.content = content
-    self.message_id = msg_format.generate_message_id()
-    self.token = Token(user_id, unix_now + ttl, Token.Scope.BROADCAST)
+    self.ttl = ttl
+    self.timestamp = Timestamp(unix_now)
+    self.message_id = MessageID.generate()
+    self.token = Token(self.user_id, self.timestamp + self.ttl, self.SCOPE)
 
   @classmethod
   def parse(cls, data: dict) -> "Post":
-    return cls.__new__(cls)._init_from_dict(data)
+    new_obj = cls.__new__(cls)
+    new_obj.type = data["TYPE"]
+    new_obj.user_id = UserID.parse(data["USER_ID"])
+    new_obj.content = str(data["CONTENT"])
+    new_obj.ttl = TTL.parse(int(data["TTL"]))
+    new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
+    new_obj.message_id = MessageID.parse(data["MESSAGE_ID"])
+    new_obj.token = Token.parse(data["TOKEN"])
+    Token.validate_token(new_obj.token, expected_scope=cls.SCOPE, expected_user_id=new_obj.user_id)
+    msg_format.validate_message(new_obj.payload, new_obj.__schema__)
+    return new_obj
 
-  def _init_from_dict(self, data: dict):
-    self.type = data["TYPE"]
-    self.user_id = UserID.parse(data["USER_ID"])
-    self.content = str(data["CONTENT"])
-
-    message_id = data["MESSAGE_ID"]
-    msg_format.validate_message_id(message_id)
-    self.message_id = message_id
-
-    self.token = Token.parse(data["TOKEN"])
-
-    # Extra Token Validation
-    if self.user_id != self.token.user_id:
-      raise ValueError("Invalid Token: user_id mismatch")
-    
-    if msg_format.isTokenExpired(self.token):
-      raise ValueError("Invalid Token: expired")
-    
-    if self.token.scope != Token.Scope.BROADCAST:
-      raise ValueError("Invalid Token: scope mismatch")
-
-    msg_format.validate_message(self.payload, self.__schema__)
-    return self
-
-  def send(self, sock: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
-    """
-    Sends the POST message to all followers using a provided socket.
-    """
+  def send(self, socket: socket.socket, ip: str="default", port: int=50999, encoding: str = "utf-8"):
+    """Sends the POST message to all followers using a provided socket."""
     msg = msg_format.serialize_message(self.payload)
 
     for follower in client_state.get_followers():
       try:
         follower_ip = follower.get_ip()
-        sock.sendto(msg.encode(encoding), (follower_ip, port))
-        print(f"Sent to {follower_ip}:{port}")
+        socket.sendto(msg.encode(encoding), (follower_ip, port))
+        client_logger.debug(f"Sent to {follower_ip}:{port}")
       except Exception as e:
-        print(f"Error sending to {follower}: {e}")
+        client_logger.error(f"Error sending to {follower}: {e}")
+    
+    return (ip, port)
 
   @classmethod
   def receive(cls, raw: str) -> "Post":
-    return cls.parse(msg_format.deserialize_message(raw))
+    received = cls.parse(msg_format.deserialize_message(raw))
+    following = client_state.get_following()
+    if received.user_id not in following:
+      raise ValueError(f"{received.user_id} is not followed by this client")
+    return received
+  
+  def info(self, verbose:bool = False) -> str:
+    if verbose:
+      return f"{self.payload}"
+    display_name = client_state.get_peer_display_name(self.user_id)
+    if display_name != "":
+      return f"{display_name}: {self.content}"
+    return f"{self.user_id}: {self.content}"
+
 
 
 __message__ = Post

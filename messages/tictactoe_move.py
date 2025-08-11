@@ -144,7 +144,7 @@ class TicTacToeMove(BaseMessage):
                 winning_line=winning_line,
                 turn=self.turn,
             )
-            result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
+            result.send(socket=client.get_broadcast_socket(), ip=self.from_user.get_ip(), port=config.PORT)
 
         elif game_session_manager.is_draw(self.game_id):
             result = TicTacToeResult(
@@ -155,7 +155,7 @@ class TicTacToeMove(BaseMessage):
                 winning_line=None,
                 turn=self.turn,
             )
-            result.send(socket=client.get_broadcast_socket(), ip=self.to_user.get_ip(), port=config.PORT)
+            result.send(socket=client.get_broadcast_socket(), ip=self.from_user.get_ip(), port=config.PORT)
 
         # Default IP resolution
         if ip == "default":

@@ -263,8 +263,12 @@ class ClientState:
         return False
       return member in self._groups[group_id]["members"]
  
-  def get_group_members(self) -> list[UserID]:
-      with self._lock:
-        return self._following.copy()
+  def get_group_members(self, group_id: str) -> list[UserID]:
+    with self._lock:
+        group = self._groups.get(group_id)
+        if group:
+            return [UserID.parse(m) if not isinstance(m, UserID) else m
+                    for m in group.get("members", [])]
+        return []
       
 client_state = ClientState()

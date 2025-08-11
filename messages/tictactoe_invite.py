@@ -13,8 +13,10 @@ from custom_types.fields import UserID, Token, Timestamp, MessageID, TTL
 from custom_types.base_message import BaseMessage
 from utils import msg_format
 from states.client_state import client_state
+from client_logger import client_logger
 from messages.ack import Ack
 from states.game import game_session_manager
+import time
 
 
 
@@ -93,8 +95,11 @@ class TicTacToeInvite(BaseMessage):
         return new_obj
    
 
-    def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
+    def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         """Sends game invitation to target user and initializes game state"""
+
+        if ip == "default":
+            ip = self.to_user.get_ip()
 
         game = game_session_manager.find_game(self.game_id)
 
@@ -104,10 +109,32 @@ class TicTacToeInvite(BaseMessage):
                 game_session_manager.assign_players(self.game_id, self.from_user, self.to_user)
             else:
                 game_session_manager.assign_players(self.game_id, self.to_user, self.from_user)
-    
-        if ip == "default":
-            ip = self.to_user.get_ip()
-        return super().send(socket, ip, port, encoding)
+
+        retries = 0
+        dest = ("failed", port)
+        client_logger.process(f"Waiting for {self.to_user}")
+        client_state.add_recent_message_sent(self)
+        while retries < 3:
+            # Send message
+            dest = super().send(socket, ip, port, encoding)
+            client_logger.debug(f"Sent file chunk {self.message_id}, attempt {retries + 1}")
+
+            # Wait a bit for ACK
+            time.sleep(2)  # Lower this to 0.5 or 1 if latency is tight
+
+            # Check for ACK
+            if client_state.get_ack_message(self.message_id) is not None:
+                client_logger.debug(f"Received ACK for file {self.message_id}")
+                break
+
+            retries += 1
+        if client_state.get_ack_message(self.message_id) is None:
+            client_logger.warn(f"No ACK received for invite {self.message_id} after {retries} attempts.")
+            client_logger.warn(f"Aborting TICTACTOE_INVITE.")
+            game_session_manager.delete_game(self.game_id)
+            client_state.remove_recent_message_sent(self)
+            return dest
+        return dest
 
 
     @classmethod
@@ -115,14 +142,16 @@ class TicTacToeInvite(BaseMessage):
         """Processes a received game invitation and displays initial game info."""
 
         received_invite = cls.parse(msg_format.deserialize_message(raw))
-
+        if received_invite.to_user != client_state.get_user_id():
+            raise ValueError("Message is not intended to be received by this client")
         
         # Print invite information
         print(f"{received_invite.from_user} invited you to play Tic-Tac-Toe.")
         
         client.initialize_sockets(config.PORT)
         ack = Ack(message_id=received_invite.message_id)
-        ack.send(socket=client.get_broadcast_socket(), ip=received_invite.from_user.get_ip(), port=config.PORT)
+        dest = ack.send(socket=client.get_unicast_socket(), ip=received_invite.from_user.get_ip(), port=config.PORT)
+        client_logger.debug(f"ACK SENT TO {dest}")
 
         game = game_session_manager.find_game(received_invite.game_id)
 

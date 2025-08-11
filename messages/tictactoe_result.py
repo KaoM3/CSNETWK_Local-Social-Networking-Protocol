@@ -122,6 +122,8 @@ class TicTacToeResult(BaseMessage):
     def receive(cls, raw: str) -> "TicTacToeResult":
         """Process received game result and return result object."""
         result_received = cls.parse(msg_format.deserialize_message(raw))
+        if result_received.to_user != client_state.get_user_id():
+            raise ValueError("Message is not intended to be received by this client")
         print(f"Received game result: {result_received.result} from {result_received.from_user}")
         return result_received
 

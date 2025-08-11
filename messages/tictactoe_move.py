@@ -14,6 +14,7 @@ from client_logger import client_logger
 import socket
 import config
 import client
+import time
 
 
 class TicTacToeMove(BaseMessage):
@@ -110,15 +111,18 @@ class TicTacToeMove(BaseMessage):
         return new_obj
 
 
-    def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
+    def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         """Sends game move to other player and updates game state"""
+
+        if ip == "default":
+            ip = self.to_user.get_ip()
 
         # Validate receiver is part of the game
         game_session_manager.is_player(self.game_id, self.to_user)
 
         # Get or create the game
         game = game_session_manager.find_game(self.game_id)
-        if not game:
+        if not game and self.turn != 0:
             game = game_session_manager.create_game(self.game_id)
             game_session_manager.assign_players(self.game_id, self.from_user, self.to_user)
 
@@ -144,7 +148,7 @@ class TicTacToeMove(BaseMessage):
                 winning_line=winning_line,
                 turn=self.turn,
             )
-            result.send(socket=client.get_broadcast_socket(), ip=self.from_user.get_ip(), port=config.PORT)
+            result.send(socket=client.get_unicast_socket(), ip=self.from_user.get_ip(), port=config.PORT)
 
         elif game_session_manager.is_draw(self.game_id):
             result = TicTacToeResult(
@@ -155,28 +159,49 @@ class TicTacToeMove(BaseMessage):
                 winning_line=None,
                 turn=self.turn,
             )
-            result.send(socket=client.get_broadcast_socket(), ip=self.from_user.get_ip(), port=config.PORT)
+            result.send(socket=client.get_unicast_socket(), ip=self.from_user.get_ip(), port=config.PORT)
 
         # Default IP resolution
-        if ip == "default":
-            ip = self.to_user.get_ip()
+        retries = 0
+        dest = ("failed", port)
+        client_logger.process(f"Waiting for {self.to_user}")
+        client_state.add_recent_message_sent(self)
+        while retries < 3:
+            # Send message
+            dest = super().send(socket, ip, port, encoding)
+            client_logger.debug(f"Sent file chunk {self.message_id}, attempt {retries + 1}")
 
-        return super().send(socket, ip, port, encoding)
+            # Wait a bit for ACK
+            time.sleep(2)  # Lower this to 0.5 or 1 if latency is tight
 
+            # Check for ACK
+            if client_state.get_ack_message(self.message_id) is not None:
+                client_logger.debug(f"Received ACK for file {self.message_id}")
+                break
+            retries += 1
+        if client_state.get_ack_message(self.message_id) is None:
+            client_logger.warn(f"No ACK received for invite {self.message_id} after {retries} attempts.")
+            client_logger.warn(f"Aborting TICTACTOE_INVITE.")
+            client_state.remove_recent_message_sent(self)
+            game.undo()
+            return dest
+        return dest
      
     @classmethod
     def receive(cls, raw: str) -> "TicTacToeMove":
         """Process received game move and update game state"""
         move_received = cls.parse(msg_format.deserialize_message(raw))
+        if move_received.to_user != client_state.get_user_id():
+            raise ValueError("Message is not intended to be received by this client")
         print(f"Received move: {move_received.from_user} at position {move_received.position}")
 
         client.initialize_sockets(config.PORT)
 
         # Acknowledge
+        client.initialize_sockets(config.PORT)
         ack = Ack(message_id=move_received.message_id)
-        ack.send(socket=client.get_broadcast_socket(),
-                ip=move_received.from_user.get_ip(),
-                port=config.PORT)
+        dest = ack.send(socket=client.get_unicast_socket(), ip=move_received.from_user.get_ip(), port=config.PORT)
+        client_logger.debug(f"ACK SENT TO {dest}")
 
         # Validate player
         game = game_session_manager.find_game(move_received.game_id)
@@ -210,7 +235,7 @@ class TicTacToeMove(BaseMessage):
                 winning_line=winning_line,
                 turn=move_received.turn,
             )
-            result.send(socket=client.get_broadcast_socket(),
+            result.send(socket=client.get_unicast_socket(),
                         ip=move_received.to_user.get_ip(),
                         port=config.PORT)
 
@@ -223,7 +248,7 @@ class TicTacToeMove(BaseMessage):
                 winning_line=None,
                 turn=move_received.turn,
             )
-            result.send(socket=client.get_broadcast_socket(),
+            result.send(socket=client.get_unicast_socket(),
                         ip=move_received.to_user.get_ip(),
                         port=config.PORT)
 

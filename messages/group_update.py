@@ -50,6 +50,24 @@ class GroupUpdate(BaseMessage):
         self.remove = remove.strip()
         self.timestamp = Timestamp(unix_now)
         self.token = Token(self.from_user, self.timestamp + ttl, Token.Scope.GROUP)
+    
+    @classmethod
+    def parse(cls, data: dict) -> "GroupUpdate":  # match parent signature
+        new_obj = cls.__new__(cls)
+        new_obj.type = data["TYPE"]
+        new_obj.from_user = UserID.parse(data["FROM"])
+        new_obj.group_id = data["GROUP_ID"]
+        new_obj.add = data.get("ADD", "")
+        new_obj.remove = data.get("REMOVE", "")
+        new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
+        new_obj.token = Token.parse(data["TOKEN"])
+        Token.validate_token(
+            new_obj.token,
+            expected_scope=Token.Scope.GROUP,
+            expected_user_id=new_obj.from_user
+        )
+        msg_format.validate_message(new_obj.payload, new_obj.__schema__)
+        return new_obj
 
     def send(self, sock: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         # Update local state first

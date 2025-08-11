@@ -84,24 +84,26 @@ class GroupCreate(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
         """
-        Send to all peers, but DROP if group_id is not unique locally.
+        Broadcast GROUP_CREATE to all peers.
+        NOTE: __init__ already created the group locally, so a strict
+        'drop if duplicate' here would always drop. We log and proceed to send;
+        receivers enforce uniqueness.
         """
-        # 1) Enforce uniqueness locally
+        # If you still want a log when it's already known locally:
         if self.group_id in client_state.get_group_ids():
-            client_logger.warning(f"Dropping GROUP_CREATE for '{self.group_id}': duplicate group_id")
-            return (ip, port)
+            client_logger.debug(f"GROUP_CREATE '{self.group_id}' already known locally; broadcasting for peers.")
 
-        # 2) Broadcast to all peers
         msg = msg_format.serialize_message(self.payload)
         last_ip = "0.0.0.0"
+
         for peer in client_state.get_peers():
             try:
-                # Peer may be a UserID or a 'name@ip' string
+                # Peer may be UserID or "name@ip" string
                 if hasattr(peer, "get_ip"):
                     peer_ip = peer.get_ip()
                 else:
-                    peer_str = str(peer)
-                    peer_ip = peer_str.split("@", 1)[1] if "@" in peer_str else peer_str
+                    p = str(peer)
+                    peer_ip = p.split("@", 1)[1] if "@" in p else p
 
                 socket.sendto(msg.encode(encoding), (peer_ip, port))
                 client_logger.debug(f"Sent GROUP_CREATE to peer {peer} at {peer_ip}:{port}")
@@ -110,6 +112,7 @@ class GroupCreate(BaseMessage):
                 client_logger.error(f"Error sending GROUP_CREATE to {peer}: {e}")
 
         return (last_ip, port)
+
 
 
     @classmethod

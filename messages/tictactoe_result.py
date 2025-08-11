@@ -16,7 +16,7 @@ class TicTacToeResult(BaseMessage):
     """
 
     TYPE = "TICTACTOE_RESULT"
-    __hidden__ = False
+    __hidden__ = True
     __schema__ = {
         "TYPE": TYPE,
         "FROM": {"type": UserID, "required": True},
@@ -43,7 +43,9 @@ class TicTacToeResult(BaseMessage):
             "SYMBOL": self.symbol,
             "WINNING_LINE": self.winning_line,
             "TURN": self.turn,
+            "TIMESTAMP": self.timestamp,
             "TOKEN": self.token
+            
         }
 
     def __init__(self, to: UserID, gameid: str, result: str, symbol: str,
@@ -81,9 +83,9 @@ class TicTacToeResult(BaseMessage):
         self.result = result
         self.symbol = symbol
         self.winning_line = winning_line
-        self.turn = msg_format.sanitize_position(turn)
+        self.turn = msg_format.sanitize_turn(turn)
         self.message_id = MessageID.generate()
-        self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
+        self.token = Token(self.from_user, Timestamp(unix_now) + ttl, Token.Scope.GAME)
         self.timestamp = Timestamp(unix_now)
 
     @classmethod
@@ -96,7 +98,7 @@ class TicTacToeResult(BaseMessage):
         new_obj.result = data["RESULT"]
         new_obj.symbol = data["SYMBOL"]
         new_obj.winning_line = data["WINNING_LINE"]
-        new_obj.turn = msg_format.sanitize_position(data["TURN"])
+        new_obj.turn = msg_format.sanitize_turn(data["TURN"])
 
         new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
         new_obj.message_id = MessageID.parse(data["MESSAGE_ID"]) 
@@ -108,10 +110,6 @@ class TicTacToeResult(BaseMessage):
 
     def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
         """Send game result to other player."""
-        msg = msg_format.serialize_message(self.payload)
-
-        print(f"Result sent to {self.to_user}: {self.result}")
-
         if ip == "default":
             ip = self.to_user.get_ip()
         return super().send(socket, ip, port, encoding)
@@ -120,8 +118,14 @@ class TicTacToeResult(BaseMessage):
     def receive(cls, raw: str) -> "TicTacToeResult":
         """Process received game result and return result object."""
         result_received = cls.parse(msg_format.deserialize_message(raw))
-        print(f"Received game result: {result_received.result} from {result_received.from_user}")
+        if result_received.to_user != client_state.get_user_id():
+            raise ValueError("Message is not intended to be received by this client")
         return result_received
 
+    def info(self, verbose: bool = False) -> str:
+        if verbose:
+            return f"{self.payload}\n"
+        else:
+            return f"Received game result: {self.result} from {self.from_user}\nPlayer {self.symbol} wins the game {self.game_id}!\nWinning line: {self.winning_line}"
 
 __message__ = TicTacToeResult

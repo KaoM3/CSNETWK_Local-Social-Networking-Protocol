@@ -15,8 +15,22 @@ class GameState:
         self.player_x: Optional[str] = None
         self.player_o: Optional[str] = None
         self.starting_symbol: str = "X"  # X always starts unless changed
-        
+        self.prev_state: GameState = None
 
+    @classmethod
+    def _manual_construct(cls, active: bool, board: list, last_symbol: str, turn: int, player_x: str, player_o: str, starting_symbol: str, prev_state) -> "GameState":
+        new_gamestate = cls()
+        new_gamestate.active = active
+        new_gamestate.board = board.copy()
+        new_gamestate.last_symbol = last_symbol
+        new_gamestate.turn = turn
+        new_gamestate.player_x = player_x
+        new_gamestate.player_o = player_o
+        new_gamestate.starting_symbol = starting_symbol
+        if prev_state is not None and not isinstance(prev_state, GameState):
+            raise ValueError("Invalid previous GameState")
+        new_gamestate.prev_state = prev_state
+        return new_gamestate
 
     def get_board_string(self) -> str:
         """Returns the current game board as a string."""
@@ -41,6 +55,16 @@ class GameState:
             ValueError: If player is invalid, it's not their turn, 
                         position is invalid, or symbol is invalid.
         """
+        last_state = self._manual_construct(
+            self.active,
+            self.board,
+            self.last_symbol,  
+            self.turn,  
+            self.player_x,
+            self.player_o,
+            self.starting_symbol,
+            self.prev_state
+        )
         # Validate player and turn
         if user_id not in [self.player_x, self.player_o]:
             raise ValueError(f"User {user_id} is not a player in this game")
@@ -64,7 +88,13 @@ class GameState:
         self.board[position] = symbol
         self.last_symbol = symbol
         self.turn += 1
+        self.prev_state = last_state
         client_logger.info(f"Player {symbol} ({user_id}) moved to position {position}")
+
+    def undo(self):
+        if self.prev_state:
+            return self.prev_state
+        raise ValueError("No previous game state to undo to.")
 
 
 class GameSessionManager:
@@ -78,6 +108,12 @@ class GameSessionManager:
         """Returns the current turn number for the specified game."""
         game = self.find_game(game_id)
         return game.turn
+    
+    def undo(self, game_id: str) -> int:
+        game = self.find_game(game_id)
+        prev_game_state = game.prev_state
+        if prev_game_state is not None:
+            self._sessions[game_id] = prev_game_state
 
 
     def assign_players(self, game_id: str, player_x: str, player_o: str):
@@ -170,6 +206,20 @@ class GameSessionManager:
                 return True
 
         return False
+    
+    def is_draw(self, game_id: str) -> bool:
+        """Check if the game is a draw: board full and no winner."""
+        game = self.find_game(game_id)
+        if not game:
+            return False
+
+        # If any empty space, not a draw yet
+        if ' ' in game.board:
+            return False
+
+        # Board full, no winner => draw
+        return True
+
     
     def find_winning_line(self, game_id: str) -> Optional[str]:
         """Finds and returns the winning line as a comma-separated string, e.g., '0,1,2'."""

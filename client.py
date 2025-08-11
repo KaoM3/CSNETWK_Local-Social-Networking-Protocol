@@ -48,17 +48,17 @@ def run_threads():
       recv_queue.put((data, address))
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
-  def add_peer_if_none(message, address, port):
-    new_peer = None
-    if hasattr(message, "user_id"):
-      new_peer = message.user_id
-    elif hasattr(message, "from_user"):
-      new_peer = message.from_user
-    client_logger.debug(f"new_peer = {new_peer}")
-    if new_peer is not None and client_state.add_peer(new_peer):
-      sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address, port)
-      client_state.add_recent_message_sent(sent_ping)
-      client_logger.debug(f"PING NEW PEER: {sent_ping}")
+  # def add_peer_if_none(message, address, port):
+  #   new_peer = None
+  #   if hasattr(message, "user_id"):
+  #     new_peer = message.user_id
+  #   elif hasattr(message, "from_user"):
+  #     new_peer = message.from_user
+  #   client_logger.debug(f"new_peer = {new_peer}")
+  #   if new_peer is not None and client_state.add_peer(new_peer):
+  #     sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address, port)
+  #     client_state.add_recent_message_sent(sent_ping)
+  #     client_logger.debug(f"PING NEW PEER: {sent_ping}")
 
   def message_process_loop():
     client_logger.debug("INIT THREAD: unicast_process_loop()")
@@ -67,9 +67,15 @@ def run_threads():
       try:
         received_msg = router.recv_message(data, address)
         if received_msg is not None:
-          client_state.add_recent_message_received(received_msg)           
-          add_peer_if_none(received_msg, address[0], address[1]) 
+          client_state.add_recent_message_received(received_msg)
           interface.print_message(received_msg)
+          #add_peer_if_none(received_msg, address[0], address[1]) 
+          new_peer = None
+          if hasattr(received_msg, "user_id"):
+            new_peer = received_msg.user_id
+          elif hasattr(received_msg, "from_user"):
+            new_peer = received_msg.from_user       
+          client_state.add_peer(new_peer)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")
   threading.Thread(target=message_process_loop, daemon=True).start()
@@ -101,18 +107,17 @@ def run_threads():
       time.sleep(5)
   threading.Thread(target=update_states, daemon=True).start()
 
-  def keep_alive():
-    client_logger.debug("INIT THREAD: keep_alive()")
-    while True:
-      for user in client_state.get_peers():
-        try:
-          sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, user.get_ip(), config.PORT)
-          client_state.add_recent_message_sent(sent_ping)
-          client_logger.debug(f"RE-PING PEER: {sent_ping}")
-        except:
-          continue
-      time.sleep(config.KEEP_ALIVE)
-  threading.Thread(target=keep_alive, daemon=True).start()
+  # def keep_alive():
+  #   client_logger.debug("INIT THREAD: keep_alive()")
+  #   while True:
+  #     for user in client_state.get_peers():
+  #       try:
+  #         sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, user.get_ip(), config.PORT)
+  #         client_state.add_recent_message_sent(sent_ping)
+  #       except:
+  #         continue
+  #     time.sleep(config.KEEP_ALIVE)
+  # threading.Thread(target=keep_alive, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE

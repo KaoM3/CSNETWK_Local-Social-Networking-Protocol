@@ -86,7 +86,7 @@ class GroupUpdate(BaseMessage):
                     client_logger.error(f"Error removing {u} from {self.group_id}: {e}")
 
         # Compute recipients: (current members ∪ added) − removed − self
-        recipients = set(client_state.get_group_members(self.group_id) or [])
+        recipients = set(client_state.get_group_members())
         if self.add:
             recipients |= {UserID.parse(u) for u in msg_format.string_to_list(self.add)}
         if self.remove:

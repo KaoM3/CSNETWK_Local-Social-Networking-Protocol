@@ -1,5 +1,6 @@
-import os
 from typing import Generator
+import mimetypes
+import os
 
 def chunk_file(filepath: str, chunk_size: int = 1024) -> Generator[bytes, None, None]:
     """Generator that yields file chunks of specified size"""
@@ -14,20 +15,5 @@ def get_file_info(filepath: str) -> tuple[str, int, str]:
     """Returns (filename, filesize, filetype)"""
     filename = os.path.basename(filepath)
     filesize = os.path.getsize(filepath)
-    
-    # Simple filetype detection
-    ext = os.path.splitext(filename)[1].lower()
-    filetypes = {
-        '.txt': 'text/plain',
-        '.pdf': 'application/pdf',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg', 
-        '.png': 'image/png',
-        '.gif': 'image/gif',
-        '.mp3': 'audio/mpeg',
-        '.mp4': 'video/mp4',
-        '.wav': 'audio/wav'
-    }
-    filetype = filetypes.get(ext, 'application/octet-stream')
-    
-    return filename, filesize, filetype
+    filetype, _ = mimetypes.guess_type(filename)
+    return filename, filesize, filetype or 'application/octet-stream'

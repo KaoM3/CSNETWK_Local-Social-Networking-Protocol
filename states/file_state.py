@@ -116,18 +116,23 @@ class FileState:
         transfer = self._pending_transfers[file_id]
         if not (transfer.received_count == transfer.total_chunks and transfer.total_chunks > 0):
             raise ValueError(f"File Transfer with id {file_id} is not yet complete")
+        
         # Combine chunks in order
         complete_data = b""
+        client_logger.process("Combining file chunks...")
         for i in range(transfer.total_chunks):
             chunk = transfer.received_chunks[i]
             if chunk is None:
                 raise ValueError(f"Chunk at index {i} is missing or None.")
             complete_data += chunk
+        client_logger.success("Combined all file chunks!")
 
         # Save to file
         filepath = os.path.join(self._files_dir, transfer.filename)
+        client_logger.process(f"Writing file to {filepath}...")
         with open(filepath, "wb") as f:
             f.write(complete_data)
+        client_logger.success(f"File saved to {filepath}!")
 
         # Cleanup
         del self._pending_transfers[file_id]

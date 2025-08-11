@@ -1,5 +1,5 @@
 import threading
-from custom_types.fields import UserID, Token
+from custom_types.fields import UserID, Token, MessageID
 from custom_types.base_message import BaseMessage
 from client_logger import client_logger
 import time
@@ -40,27 +40,37 @@ class ClientState:
   def _validate_base_message(self, data):
     if not isinstance(data, BaseMessage):
       raise ValueError(f"ERROR: {data} is not of type BaseMessage")
+  
+  def _validate_message_id(self, data):
+    if not isinstance(data, MessageID):
+        raise ValueError(f"ERROR: {data} is not of type MessageID")
     
-  def cleanup_expired_messages(self):
+  def cleanup_expired_messages(self) -> list[BaseMessage]:
     with self._lock:
       now = int(time.time())
+      expired_messages = []
+      
       valid_messages_received = []
       for msg in self._recent_messages_received:
         token = getattr(msg, "token", None)
         if token is None or token.valid_until > now:
           valid_messages_received.append(msg)
         else:
+          expired_messages.append(msg)
           client_logger.debug(f"EXPIRED: {msg}")
       self._recent_messages_received = valid_messages_received
+
       valid_messages_sent = []
       for msg in self._recent_messages_sent:
         token = getattr(msg, "token", None)
         if token is None or token.valid_until > now:
           valid_messages_sent.append(msg)
         else:
+          expired_messages.append(msg)
           client_logger.debug(f"EXPIRED: {msg}")
       self._recent_messages_sent = valid_messages_sent
 
+      return expired_messages
 
   def get_user_id(self):
     with self._lock:
@@ -72,12 +82,14 @@ class ClientState:
       self._user_id = UserID.parse(new_user_id)
       client_logger.debug(f"Set user_id: {self._user_id}")
 
-  def add_peer(self, peer: UserID):
+  def add_peer(self, peer: UserID) -> bool:
     with self._lock:
       self._validate_user_id(peer)
       if peer not in self._peers:
         self._peers.append(peer)
         client_logger.debug(f"Added peer: {peer}")
+        return True
+      return False
 
   def remove_peer(self, peer: UserID):
     with self._lock:
@@ -85,6 +97,13 @@ class ClientState:
       if peer in self._peers:
         self._peers.remove(peer)
         client_logger.debug(f"Removed peer: {peer}")
+
+  def get_peer_by_ip(self, ip: str) -> UserID:
+    with self._lock:
+      for peer in self._peers:
+        if peer.get_ip() == ip:
+          return peer
+      return None
 
   def update_peer_display_name(self, peer: UserID, display_name: str):
     with self._lock:
@@ -174,6 +193,11 @@ class ClientState:
       self._validate_base_message(message)
       self._recent_messages_sent.append(message)
 
+  def remove_recent_message_sent(self, message: BaseMessage):
+    with self._lock:
+      self._validate_base_message(message)
+      self._recent_messages_sent.remove(message)
+
 
   def get_recent_messages_received(self) -> list:
     self.cleanup_expired_messages()
@@ -196,6 +220,31 @@ class ClientState:
         client_logger.debug(f"REVOKE: Invalidating message: {msg}")
         self._revoked_tokens.append(revoked_token)
       self._recent_messages_received = valid_messages
+
+  def get_ack_message(self, message_id) -> "BaseMessage":
+    with self._lock:
+      self._validate_message_id(message_id)
+      for msg in self._recent_messages_received:
+        try:
+          if msg.type == "ACK" and message_id == msg.message_id:
+            return msg
+        except:
+          continue
+    
+  def get_message_by_id(self, message_id) -> "BaseMessage":
+    with self._lock:
+      self._validate_message_id(message_id)
+      for msg in self._recent_messages_received + self._recent_messages_sent:
+        try:
+          if hasattr(msg, "message_id"):
+            if message_id == msg.message_id:
+              return msg
+          elif hasattr(msg, "fileid"):
+            if message_id == msg.fileid:
+              return msg
+        except:
+          continue
+      return None
 
   def get_revoked_tokens(self) -> list[Token]:
     with self._lock:

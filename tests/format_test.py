@@ -1,6 +1,6 @@
 import utils.msg_format as msg_format
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID
+from custom_types.fields import Token
 import socket
 
 if __name__ == "__main__":

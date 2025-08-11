@@ -57,6 +57,11 @@ class ClientLogger:
             logging.warning(message)
             self._print_log(f"WARNING: {message}", Color.WARN, True)
 
+    def process(self, message: str):
+        with self._log_lock:
+            logging.info(message)
+            self._print_log(f"PROCESS: {message}", Color.WARN, True)
+
     def success(self, message: str):
         with self._log_lock:
             logging.info(message)

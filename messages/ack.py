@@ -1,11 +1,7 @@
-# TODO: Implement Schema
-# TODO: Implement send()
-# TODO: Implement receive()
-
 from custom_types.fields import MessageID
 from custom_types.base_message import BaseMessage
-from utils import msg_format
 from states.client_state import client_state
+from utils import msg_format
 import socket
 
 class Ack(BaseMessage):
@@ -25,7 +21,7 @@ class Ack(BaseMessage):
             "STATUS": self.status,
         }
 
-    def __init__(self, message_id: MessageID,status: str = "RECEIVED"):
+    def __init__(self, message_id: str, status: str = "RECEIVED"):
         self.type = self.TYPE
         self.message_id = message_id
         self.status = status
@@ -34,29 +30,28 @@ class Ack(BaseMessage):
     def parse(cls, data: dict) -> "Ack":
         new_obj = cls.__new__(cls)
         new_obj.type = data["TYPE"]
-    
         new_obj.message_id = MessageID.parse(data["MESSAGE_ID"])
-
         new_obj.status = data["STATUS"]
 
         msg_format.validate_message(new_obj.payload, new_obj.__schema__)
         return new_obj
 
-    def send(self, socket: socket.socket, ip: str, port: int, encoding: str = "utf-8"):
-        msg = msg_format.serialize_message(self.payload)
-
-        # Send to the specified self
-        self_ip = client_state.get_user_id().get_ip()
-        socket.sendto(msg.encode(encoding), (ip, port))
+    def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
+        if ip == "default":
+            raise ValueError("Unknown IP for ACK")
+        return super().send(socket, ip, port, encoding)
 
     @classmethod
     def receive(cls, raw: str) -> "Ack":
         received = cls.parse(msg_format.deserialize_message(raw))
+        if client_state.get_message_by_id(received.message_id) == None:
+            raise ValueError("MessageID unknown for ACK")
         return received
+    
+    def info(self, verbose: bool = False) -> str:
+        if verbose:
+            return f"{self.payload}"
+        else:
+            return ""
 
 __message__ = Ack
-
-
-
-
-

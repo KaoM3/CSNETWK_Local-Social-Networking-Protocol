@@ -83,41 +83,65 @@ class GroupCreate(BaseMessage):
         return new_obj
 
     def send(self, socket: socket.socket, ip: str = "default", port: int = 50999, encoding: str = "utf-8"):
+        """
+        Send to all peers, but DROP if group_id is not unique locally.
+        """
+        # 1) Enforce uniqueness locally
+        if self.group_id in client_state.get_group_ids():
+            client_logger.warning(f"Dropping GROUP_CREATE for '{self.group_id}': duplicate group_id")
+            return (ip, port)
+
+        # 2) Broadcast to all peers
         msg = msg_format.serialize_message(self.payload)
-        # Group create messages should be sent to all peers
+        last_ip = "0.0.0.0"
         for peer in client_state.get_peers():
-            #if peer != self.from_user:  # Don't send to self
-                try:
-                    # Extract IP address from UserID (format is username@ip)
-                    peer_ip = str(peer).split('@')[1]
-                    socket.sendto(msg.encode(encoding), (peer_ip, port))
-                    client_logger.debug(f"Sent group create message to peer {peer} at {peer_ip}:{port}")
-                except Exception as e:
-                    client_logger.error(f"Error sending to {peer} ({str(e)})")
-        return (ip, port)
+            try:
+                # Peer may be a UserID or a 'name@ip' string
+                if hasattr(peer, "get_ip"):
+                    peer_ip = peer.get_ip()
+                else:
+                    peer_str = str(peer)
+                    peer_ip = peer_str.split("@", 1)[1] if "@" in peer_str else peer_str
+
+                socket.sendto(msg.encode(encoding), (peer_ip, port))
+                client_logger.debug(f"Sent GROUP_CREATE to peer {peer} at {peer_ip}:{port}")
+                last_ip = peer_ip
+            except Exception as e:
+                client_logger.error(f"Error sending GROUP_CREATE to {peer}: {e}")
+
+        return (last_ip, port)
 
 
     @classmethod
     def receive(cls, raw: str) -> "GroupCreate":
+        """
+        If the receiver is in MEMBERS → create and store full group in _groups.
+        If not → only store group_id in _group_ids.
+        DROP if group_id already known (idempotent / uniqueness).
+        """
         received = cls.parse(msg_format.deserialize_message(raw))
-        # When receiving a group create message, add the group to client state
+
+        # 1) Drop duplicates (already known group_id)
+        if received.group_id in client_state.get_group_ids():
+            client_logger.debug(f"Ignoring GROUP_CREATE '{received.group_id}': group_id already known")
+            return received
+
+        # 2) Decide based on membership
         group_members = msg_format.string_to_list(received.members)
         member_ids = [UserID.parse(member) for member in group_members]
-        
-        # Always store the group information in client state
-        client_state.create_group(received.group_id, received.group_name, member_ids)
-        client_logger.debug(f"Stored group in client state: {received.group_id} ({received.group_name}) with members: {member_ids}")
-        
+        me = client_state.get_user_id()
+
+        if me in member_ids:
+            # Receiver is part of the group → create full group entry
+            client_state.create_group(received.group_id, received.group_name, member_ids)
+            client_logger.debug(
+                f"Created group locally from GROUP_CREATE: {received.group_id} ({received.group_name}) with members: {member_ids}"
+            )
+        else:
+            # Not a member → only track the ID
+            client_state.add_group_id(received.group_id)
+            client_logger.debug(f"Stored group_id only (not a member): {received.group_id}")
+
         return received
-
-    def info(self, verbose: bool = False) -> str:
-        if verbose:
-            return f"{self.payload}"
-        display_name = client_state.get_peer_display_name(self.from_user)
-        member_count = len(msg_format.string_to_list(self.members))
-        if display_name != "":
-            return f"{display_name} created group '{self.group_name}' with {member_count} members"
-        return f"{self.from_user} created group '{self.group_name}' with {member_count} members"
-
 
 __message__ = GroupCreate

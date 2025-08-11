@@ -235,6 +235,12 @@ class ClientState:
   def get_group_ids(self) -> list[str]:
     with self._lock:
       return self._group_ids.copy()
+    
+  def add_group_id(self, group_id: str):
+    with self._lock:
+      if group_id not in self._group_ids:
+        self._group_ids.append(group_id)
+        client_logger.debug(f"Added group ID: {group_id}")
 
   # somewhere in ClientState
 

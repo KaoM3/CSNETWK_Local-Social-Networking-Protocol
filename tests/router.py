@@ -2,8 +2,8 @@ import router
 import config
 import utils.msg_format as msg_format
 from custom_types.base_message import BaseMessage
-from custom_types.user_id import UserID
-from custom_types.token import Token
+from custom_types.fields import UserID
+from custom_types.fields import Token
 
 if __name__ == "__main__":
   router.load_messages(config.MESSAGES_DIR)

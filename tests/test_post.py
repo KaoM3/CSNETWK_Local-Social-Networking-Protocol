@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 from messages.post import Post
-from custom_types.user_id import UserID
+from custom_types.fields import UserID
 import socket
 
 class TestPostSend(unittest.TestCase):

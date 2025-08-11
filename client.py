@@ -57,7 +57,7 @@ def run_threads():
         elif hasattr(received_msg, "user_id"):
           new_peer = client_state.add_peer(received_msg.user_id)
         if new_peer is not None:
-          router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
+          router.send_message(UNICAST_SOCKET, "PING", {}, new_peer.get_ip(), config.PORT)
         interface.print_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
@@ -75,7 +75,7 @@ def run_threads():
           elif hasattr(received_msg, "user_id"):
             new_peer = client_state.add_peer(received_msg.user_id)
           if new_peer is not None:
-            router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
+            router.send_message(UNICAST_SOCKET, "PING", {}, new_peer.get_ip(), config.PORT)
           interface.print_message(received_msg)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")

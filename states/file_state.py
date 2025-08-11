@@ -49,6 +49,9 @@ class FileState:
                 raise ValueError("No file transfers to accept")
 
             self._validate_message_id(file_id)
+            if file_id in self._accepted_files:
+                client_logger.info(f"File transfer {file_id} already accepted!")
+                return
             if file_id not in self._pending_transfers.keys():
                 raise ValueError("No pending file offers to accept")
 
@@ -56,8 +59,10 @@ class FileState:
             client_logger.debug(f"Accepted file transfer with file_id {file_id}")
             try:
                 self._save_completed_file(file_id)
-            except:
-                client_logger.info("Waiting to finish file transfer")
+            except ValueError:
+                client_logger.debug(f"Waiting for {file_id} to complete")
+            except Exception as e:
+                client_logger.error(f"Unexpected error completing {file_id}: {e}")
     
     def reject_file(self, file_id: MessageID = None):
         with self._lock:
@@ -104,8 +109,10 @@ class FileState:
                 transfer.set_total_chunks(total_chunks)
 
             decoded_data = base64.b64decode(chunk_data)
-            transfer.received_chunks[chunk_index] = decoded_data
-            transfer.received_count += 1
+            
+            if transfer.received_chunks[chunk_index] is None:
+                transfer.received_chunks[chunk_index] = decoded_data
+                transfer.received_count += 1
             client_logger.debug(f"Chunks received for FILE_ID {file_id}: {transfer.received_count}")
 
             if transfer.received_count == transfer.total_chunks:
@@ -157,8 +164,10 @@ class FileState:
                     try:
                         self._save_completed_file(file_id)
                         completed_files.append(file_id)
-                    except:
+                    except ValueError:
                         client_logger.debug(f"Waiting for {file_id} to complete")
+                    except Exception as e:
+                        client_logger.error(f"Unexpected error completing {file_id}: {e}")
 
             if completed_files:
                 client_logger.debug(f"Completed file transfers: {completed_files}")

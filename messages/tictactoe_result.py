@@ -96,7 +96,7 @@ class TicTacToeResult(BaseMessage):
         new_obj.result = data["RESULT"]
         new_obj.symbol = data["SYMBOL"]
         new_obj.winning_line = data["WINNING_LINE"]
-        new_obj.turn = msg_format.sanitize_position(data["TURN"])
+        new_obj.turn = msg_format.sanitize_turn(data["TURN"])
 
         new_obj.timestamp = Timestamp.parse(int(data["TIMESTAMP"]))
         new_obj.message_id = MessageID.parse(data["MESSAGE_ID"]) 

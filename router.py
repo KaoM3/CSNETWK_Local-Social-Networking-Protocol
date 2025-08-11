@@ -59,18 +59,10 @@ def recv_message(raw: bytes, address) -> BaseMessage:
   try:
     msg_str = raw.decode(config.ENCODING, errors="ignore")
     msg_type = msg_format.extract_message_type(msg_str)
-
     message_obj = MESSAGE_REGISTRY[msg_type].receive(msg_str)
-
     client_logger.receive(f"MESSAGE: {message_obj.payload} FROM {address}")
     return message_obj
   except Exception as err:
     client_logger.drop({raw.decode(config.ENCODING, errors="ignore")})
     client_logger.drop({err})
-
-def get_module(module_name: str):
-  """
-  Returns the module object for the given module name.
-  """
-  return MESSAGE_REGISTRY[module_name]
   

@@ -9,7 +9,9 @@ import inspect
 import interface
 import traceback
 from states.client_state import client_state
+from states.file_state import file_state
 from client_logger import client_logger
+from queue import Queue
 
 UNICAST_SOCKET = None
 BROADCAST_SOCKET = None
@@ -29,43 +31,87 @@ def initialize_sockets(port):
   BROADCAST_SOCKET.bind(('0.0.0.0', port))
 
 def run_threads():
-  # Concurrent Thread for receiving unicast messages
+  recv_queue = Queue()
+
+  # Thread: socket listener, only receives and puts into queue
   def unicast_receive_loop():
     client_logger.debug("INIT THREAD: unicast_receive_loop()")
     while True:
-      data, address = UNICAST_SOCKET.recvfrom(1024)
-      client_logger.debug(f"Received {data} via UNICAST_SOCKET from {address}")
-      received_msg = router.recv_message(data, address)
-      if received_msg is not None:
-        client_state.add_recent_message(received_msg)
-        interface.print_message(received_msg)
+      data, address = UNICAST_SOCKET.recvfrom(config.BUFSIZE)
+      recv_queue.put((data, address))
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
-  
+
   def broadcast_receive_loop():
     client_logger.debug("INIT THREAD: broadcast_receive_loop()")
     while True:
-      data, address = BROADCAST_SOCKET.recvfrom(1024)
-      client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
-      received_msg = router.recv_message(data, address)
-      if received_msg is not None:
-        client_state.add_recent_message(received_msg)
-        interface.print_message(received_msg)
+      data, address = BROADCAST_SOCKET.recvfrom(config.BUFSIZE)
+      recv_queue.put((data, address))
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
+
+  def add_peer_if_none(message, address, port):
+    new_peer = None
+    if hasattr(message, "user_id"):
+      new_peer = message.user_id
+    elif hasattr(message, "from_user"):
+      new_peer = message.from_user
+    if client_state.add_peer(new_peer):
+      sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, address[0], address[1])
+      client_state.add_recent_message_sent(sent_ping)
+      client_logger.debug(f"PING NEW PEER: {sent_ping}")
+
+  def message_process_loop():
+    client_logger.debug("INIT THREAD: unicast_process_loop()")
+    while True:
+      data, address = recv_queue.get()  # blocks until item available
+      try:
+        received_msg = router.recv_message(data, address)
+        if received_msg is not None:
+          client_state.add_recent_message_received(received_msg)           
+          add_peer_if_none(received_msg, address[0], address[1]) 
+          interface.print_message(received_msg)
+      except Exception as e:
+          client_logger.error(f"Error processing message from {address}:\n{e}")
+  threading.Thread(target=message_process_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():
     client_logger.debug("INIT THREAD: broadcast_presence()")
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
-      time.sleep(config.PING_INTERVAL)
+      try:
+        sent_ping = router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
+        if sent_ping is not None:
+          client_state.add_recent_message_sent(sent_ping)
+        time.sleep(config.PING_INTERVAL)
+      except:
+        client_logger.error("Error occurred in thread <BROADCAST_PRESENCE>:\n" + traceback.format_exc())
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
-  def cleanup_expired_messages():
+  def update_states():
+    client_logger.debug("INIT THREAD: update_states()")
     while True:
-      client_state.cleanup_expired_messages()
+      expired_messages = client_state.cleanup_expired_messages()
+      file_state.complete_transfers()
+      expired_file_offer_ids = []
+      for msg in expired_messages:
+        if msg.type == "FILE_OFFER":
+          expired_file_offer_ids.append(msg.fileid)
+      file_state.remove_transfers(expired_file_offer_ids)
       time.sleep(5)
-  threading.Thread(target=cleanup_expired_messages, daemon=True).start()
+  threading.Thread(target=update_states, daemon=True).start()
+
+  def keep_alive():
+    client_logger.debug("INIT THREAD: keep_alive()")
+    while True:
+      for user in client_state.get_peers():
+        try:
+          sent_ping = router.send_message(UNICAST_SOCKET, "PING", {}, user.get_ip(), config.PORT)
+          client_state.add_recent_message_sent(sent_ping)
+          client_logger.debug(f"RE-PING PEER: {sent_ping}")
+        except:
+          continue
+      time.sleep(config.KEEP_ALIVE)
+  threading.Thread(target=keep_alive, daemon=True).start()
 
 def main():
   # PORT AND VERBOSE MODE
@@ -104,15 +150,22 @@ def main():
   run_threads()
   
   # Main Program Loop
+  valid_message_commands = []
+  for key in router.MESSAGE_REGISTRY:
+    msg_class = router.MESSAGE_REGISTRY[key]
+    if msg_class.__hidden__ == False:
+      valid_message_commands.append(key)
+
   user_details = []
   user_details.append(f"WELCOME \"{client_state.get_user_id()}\"!")
   user_details.append(f"Using port: {config.PORT}")
   user_details.append(f"Client IP: {config.CLIENT_IP}/{config.SUBNET_MASK}")
   user_details.append(f"Broadcast IP: {config.BROADCAST_IP}")
   client_logger.info(interface.format_prompt(user_details))
-  interface.display_help(router.MESSAGE_REGISTRY)
+  interface.display_help(valid_message_commands)
+
   while True:
-    user_input = interface.get_command(router.MESSAGE_REGISTRY)
+    user_input = interface.get_command(valid_message_commands)
     if user_input in router.MESSAGE_REGISTRY:
       try:
         msg = router.MESSAGE_REGISTRY.get(user_input)
@@ -123,9 +176,9 @@ def main():
         dest_ip = "default"
         sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg_args, dest_ip, config.PORT)
         if sent_msg is not None:
-          client_state.add_recent_message(sent_msg)
-      except Exception as e:
-        client_logger.error("An error occurred:\n" + traceback.format_exc())
+          client_state.add_recent_message_sent(sent_msg)
+      except Exception:
+        client_logger.error("Error occurred in <MAIN>:\n" + traceback.format_exc())
     elif user_input is None:
       break
 

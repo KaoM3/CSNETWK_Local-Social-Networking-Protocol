@@ -42,6 +42,9 @@ class Ping(BaseMessage):
   def receive(cls, raw: str) -> "Ping":
     received = cls.parse(msg_format.deserialize_message(raw))
     client_state.add_peer(received.user_id)
+    if received.user_id not in client_state.get_peers():
+      new_ping = Ping()
+      new_ping.send(received.user_id.get_ip())
     return received
   
   def info(self, verbose:bool=False) -> str:

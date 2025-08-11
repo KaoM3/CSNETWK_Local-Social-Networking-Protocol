@@ -81,8 +81,8 @@ class GroupUpdate(BaseMessage):
             recipients |= {UserID.parse(u) for u in msg_format.string_to_list(self.add)}
 
         # - REMOVEd members (don't send to those we’re removing)
-        if self.remove:
-            recipients -= {UserID.parse(u) for u in msg_format.string_to_list(self.remove)}
+        #if self.remove:
+            #recipients -= {UserID.parse(u) for u in msg_format.string_to_list(self.remove)}
 
         # - self
         #if self.from_user in recipients:

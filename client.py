@@ -43,6 +43,17 @@ def run_threads():
   threading.Thread(target=unicast_receive_loop, daemon=True).start()
 
   # Thread: message processor, consumes from queue and processes messages
+  def broadcast_receive_loop():
+    client_logger.debug("INIT THREAD: broadcast_receive_loop()")
+    while True:
+      data, address = BROADCAST_SOCKET.recvfrom(config.BUFSIZE)
+      #client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
+      received_msg = router.recv_message(data, address)
+      if received_msg is not None:
+        client_state.add_recent_message_received(received_msg)
+        interface.print_message(received_msg)
+  threading.Thread(target=broadcast_receive_loop, daemon=True).start()
+
   def unicast_process_loop():
     client_logger.debug("INIT THREAD: unicast_process_loop()")
     while True:
@@ -59,17 +70,6 @@ def run_threads():
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")
   threading.Thread(target=unicast_process_loop, daemon=True).start()
-  
-  def broadcast_receive_loop():
-    client_logger.debug("INIT THREAD: broadcast_receive_loop()")
-    while True:
-      data, address = BROADCAST_SOCKET.recvfrom(config.BUFSIZE)
-      #client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
-      received_msg = router.recv_message(data, address)
-      if received_msg is not None:
-        client_state.add_recent_message_received(received_msg)
-        interface.print_message(received_msg)
-  #threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
   # Concurrent Thread for broadcasting every 300s:
   def broadcast_presence():

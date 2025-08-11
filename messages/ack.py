@@ -1,5 +1,6 @@
 from custom_types.fields import MessageID
 from custom_types.base_message import BaseMessage
+from states.client_state import client_state
 from utils import msg_format
 import socket
 
@@ -43,6 +44,8 @@ class Ack(BaseMessage):
     @classmethod
     def receive(cls, raw: str) -> "Ack":
         received = cls.parse(msg_format.deserialize_message(raw))
+        if client_state.get_message_by_id(received.message_id) == None:
+            raise ValueError("MessageID unknown for ACK")
         return received
     
     def info(self, verbose: bool = False) -> str:

@@ -216,6 +216,21 @@ class ClientState:
         except:
           continue
       return None
+    
+  def get_message_by_id(self, message_id) -> "BaseMessage":
+    with self._lock:
+      self._validate_message_id(message_id)
+      for msg in self._recent_messages_received:
+        try:
+          if hasattr(msg, "message_id"):
+            if message_id == msg.message_id:
+              return msg
+          elif hasattr(msg, "fileid"):
+            if message_id == msg.fileid:
+              return msg
+        except:
+          continue
+      return None
 
   def get_revoked_tokens(self) -> list[Token]:
     with self._lock:

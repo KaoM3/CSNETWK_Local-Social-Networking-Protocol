@@ -114,5 +114,9 @@ def extract_message_type(msg: str) -> str:
 
   if type_field.startswith("TYPE: "):
     return type_field[6:].strip()
-  
+
   raise ValueError("TYPE field is missing or malformed")
+
+def string_to_list(s: str) -> list:
+    """Converts a comma-separated string to a list of strings"""
+    return [item.strip() for item in s.split(",") if item.strip()]

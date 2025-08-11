@@ -23,6 +23,8 @@ class ClientState:
     self._peer_display_names = {}
     self._followers = []
     self._following = []
+    self._groups = {}  # Dictionary of {group_id: {"name": group_name, "members": [members]}}
+    self._group_ids = []  # List of group IDs
     self._recent_messages_received = []
     self._recent_messages_sent = []
     self._revoked_tokens = []
@@ -157,7 +159,7 @@ class ClientState:
       if target not in self._following:
         self._following.append(target)
         client_logger.debug(f"Added following: {target}")
-
+  
   def remove_following(self, target: UserID):
     with self._lock:
       self._validate_user_id(target)
@@ -247,5 +249,143 @@ class ClientState:
   def get_revoked_tokens(self) -> list[Token]:
     with self._lock:
       return self._revoked_tokens
+  
+  #group helpers
+  def create_group(self, group_id: str, group_name: str, members: list[UserID] = None):
+    with self._lock:
+        if members is None:
+            members = []
+        for member in members:
+            self._validate_user_id(member)
+        if group_id not in self._group_ids:
+            self._groups[group_id] = {
+                "name": group_name,
+                "members": members
+            }
+            # Add group_id if not already present
+            if group_id not in self._group_ids:
+                self._group_ids.append(group_id)
+            client_logger.debug(f"Created group: {group_id} ({group_name}) with members: {members}")
 
+  def remove_group(self, group_id: str):
+    with self._lock:
+      if group_id in self._groups:
+        del self._groups[group_id]
+        client_logger.debug(f"Removed group: {group_id}")
+
+  def get_group(self, group_id: str) -> dict:
+    with self._lock:
+      return self._groups.get(group_id, None)
+
+  def get_all_groups(self) -> dict:
+    with self._lock:
+      return self._groups.copy()
+    
+  def get_group_ids(self) -> list[str]:
+    with self._lock:
+      return self._group_ids.copy()
+    
+  def add_group_id(self, group_id: str):
+    with self._lock:
+      if group_id not in self._group_ids:
+        self._group_ids.append(group_id)
+        client_logger.debug(f"Added group ID: {group_id}")
+
+  # somewhere in ClientState
+
+  def get_group(self, group_id: str) -> dict | None:
+      with self._lock:
+          return self._groups.get(group_id)
+
+  def get_group_members(self, group_id: str) -> list[UserID]:
+      with self._lock:
+          group = self._groups.get(group_id)
+          if not group:
+              return []
+          # Ensure members are UserID objects
+          members = group.get("members", [])
+          return [UserID.parse(m) if not isinstance(m, UserID) else m for m in members]
+
+  def add_group_member(self, group_id: str, member: UserID):
+      with self._lock:
+          self._validate_user_id(member)
+          if group_id not in self._groups:
+              raise ValueError(f"Group {group_id} does not exist")
+          members = self._groups[group_id]["members"]
+          if member not in members:
+              members.append(member)
+              client_logger.debug(f"Added member {member} to group: {group_id}")
+
+  def remove_group_member(self, group_id: str, member: UserID):
+      with self._lock:
+          self._validate_user_id(member)
+          if group_id not in self._groups:
+              raise ValueError(f"Group {group_id} does not exist")
+          members = self._groups[group_id]["members"]
+          if member in members:
+              members.remove(member)
+              client_logger.debug(f"Removed member {member} from group: {group_id}")
+
+  def upsert_group_members(self, group_id: str, group_name: str | None = None,
+                          add_members: list[UserID] | None = None,
+                          remove_members: list[UserID] | None = None):
+      """
+      Create the group if missing (like create_group) and then apply add/remove in one go.
+      - group_name: used only if group is newly created (None keeps existing name).
+      - add_members/remove_members: lists of UserID (caller ensures type).
+      """
+      add_members = add_members or []
+      remove_members = remove_members or []
+
+      with self._lock:
+          # Normalize to UserID instances
+          def _norm(lst):
+              return [UserID.parse(u) if not isinstance(u, UserID) else u for u in lst]
+
+          add_members = _norm(add_members)
+          remove_members = _norm(remove_members)
+
+          # Create if missing (mimic create_group behavior)
+          if group_id not in self._groups:
+              self._groups[group_id] = {
+                  "name": group_name or str(group_id),
+                  "members": []
+              }
+              if group_id not in getattr(self, "_group_ids", []):
+                  # maintain _group_ids list if you track it
+                  self._group_ids.append(group_id)  # assumes _group_ids exists
+              client_logger.debug(f"Created group: {group_id} ({self._groups[group_id]['name']})")
+
+          members = self._groups[group_id]["members"]
+
+          # Apply adds
+          for u in add_members:
+              self._validate_user_id(u)
+              if u not in members:
+                  members.append(u)
+                  client_logger.debug(f"Added member {u} to group: {group_id}")
+
+          # Apply removes
+          for u in remove_members:
+              self._validate_user_id(u)
+              if u in members:
+                  members.remove(u)
+                  client_logger.debug(f"Removed member {u} from group: {group_id}")
+
+
+  def is_group_member(self, group_id: str, member: UserID) -> bool:
+    with self._lock:
+      self._validate_user_id(member)
+      if group_id not in self._groups:
+        return False
+      return member in self._groups[group_id]["members"]
+ 
+  def get_group_members(self, group_id: str) -> list[UserID]:
+    with self._lock:
+        group = self._groups.get(group_id)
+        if group:
+            return [UserID.parse(m) if not isinstance(m, UserID) else m
+                    for m in group.get("members", [])]
+        return []
+      
 client_state = ClientState()

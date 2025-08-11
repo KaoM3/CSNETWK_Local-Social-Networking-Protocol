@@ -19,8 +19,6 @@ from states.game import game_session_manager
 import time
 
 
-
-
 class TicTacToeInvite(BaseMessage):
     """
     Represents a TICTACTOE_INVITE message for initiating a game.

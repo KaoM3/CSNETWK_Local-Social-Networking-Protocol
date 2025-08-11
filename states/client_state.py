@@ -23,7 +23,9 @@ class ClientState:
     self._peer_display_names = {}
     self._followers = []
     self._following = []
-    self._recent_messages = []
+    self._recent_messages_received = []
+    self._recent_messages_sent = []
+    self._revoked_tokens = []
 
   def _validate_user_id(self, data):
     if not isinstance(data, UserID):
@@ -44,17 +46,30 @@ class ClientState:
   def cleanup_expired_messages(self) -> list[BaseMessage]:
     with self._lock:
       now = int(time.time())
-      valid_messages = []
       expired_messages = []
-      for msg in self._recent_messages:
+      
+      valid_messages_received = []
+      for msg in self._recent_messages_received:
         token = getattr(msg, "token", None)
         if token is None or token.valid_until > now:
-          valid_messages.append(msg)
+          valid_messages_received.append(msg)
         else:
-          client_logger.debug(f"EXPIRED: {msg}")
           expired_messages.append(msg)
-      self._recent_messages = valid_messages
+          client_logger.debug(f"EXPIRED: {msg}")
+      self._recent_messages_received = valid_messages_received
+
+      valid_messages_sent = []
+      for msg in self._recent_messages_sent:
+        token = getattr(msg, "token", None)
+        if token is None or token.valid_until > now:
+          valid_messages_sent.append(msg)
+        else:
+          expired_messages.append(msg)
+          client_logger.debug(f"EXPIRED: {msg}")
+      self._recent_messages_sent = valid_messages_sent
+
       return expired_messages
+
 
   def get_user_id(self):
     with self._lock:
@@ -98,7 +113,7 @@ class ClientState:
 
   def get_post_message(self, timestamp) -> "BaseMessage":
     with self._lock:
-      for msg in self._recent_messages:
+      for msg in self._recent_messages_sent:
         if msg.type == "POST" and msg.timestamp == timestamp:
             return msg
       return None
@@ -154,27 +169,42 @@ class ClientState:
     with self._lock:
       return self._following.copy()
     
-  def add_recent_message(self, message: BaseMessage):
+  def add_recent_message_received(self, message: BaseMessage):
+    with self._lock:
+      msg_token = getattr(message, "token", None)
+      if msg_token is None or msg_token not in self._revoked_tokens:
+        self._validate_base_message(message)
+        self._recent_messages_received.append(message)
+      else:
+        client_logger.debug("Received message token is revoked.")
+  
+  def add_recent_message_sent(self, message: BaseMessage):
     with self._lock:
       self._validate_base_message(message)
-      self._recent_messages.append(message)
+      self._recent_messages_sent.append(message)
 
-  def get_recent_messages(self) -> list:
+
+  def get_recent_messages_received(self) -> list:
     self.cleanup_expired_messages()
     with self._lock:
-      return self._recent_messages
+      return self._recent_messages_received
+    
+  def get_recent_messages_sent(self) -> list:
+    with self._lock:
+      return self._recent_messages_sent
     
   def revoke_token(self, revoked_token: Token):
     with self._lock:
       self._validate_token(revoked_token)
       valid_messages = []
-      for msg in self._recent_messages:
+      for msg in self._recent_messages_received:
         msg_token = getattr(msg, "token", None)
         if msg_token is None or msg_token != revoked_token:
           valid_messages.append(msg)
           continue
         client_logger.debug(f"REVOKE: Invalidating message: {msg}")
-      self._recent_messages = valid_messages
+        self._revoked_tokens.append(revoked_token)
+      self._recent_messages_received = valid_messages
 
   def get_ack_message(self, message_id) -> "BaseMessage":
     with self._lock:
@@ -187,5 +217,8 @@ class ClientState:
           continue
       return None
 
+  def get_revoked_tokens(self) -> list[Token]:
+    with self._lock:
+      return self._revoked_tokens
 
 client_state = ClientState()

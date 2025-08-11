@@ -50,7 +50,7 @@ def run_threads():
       try:
         received_msg = router.recv_message(data, address)
         if received_msg is not None:
-          client_state.add_recent_message(received_msg)
+          client_state.add_recent_message_received(received_msg)
           interface.print_message(received_msg)
       except Exception as e:
           client_logger.error(f"Error processing message from {address}:\n{e}")
@@ -64,7 +64,7 @@ def run_threads():
       #client_logger.debug(f"Received {data} via BROADCAST_SOCKET from {address}")
       received_msg = router.recv_message(data, address)
       if received_msg is not None:
-        client_state.add_recent_message(received_msg)
+        client_state.add_recent_message_received(received_msg)
         interface.print_message(received_msg)
   threading.Thread(target=broadcast_receive_loop, daemon=True).start()
 
@@ -73,8 +73,13 @@ def run_threads():
     client_logger.debug("INIT THREAD: broadcast_presence()")
     while True:
       # TODO: Update to be dynamic (PING at first, PROFILE if sent by user)
-      router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
-      time.sleep(config.PING_INTERVAL)
+      try:
+        sent_ping = router.send_message(BROADCAST_SOCKET, "PING", {}, config.BROADCAST_IP, config.PORT)
+        if sent_ping is not None:
+          client_state.add_recent_message_sent(sent_ping)
+        time.sleep(config.PING_INTERVAL)
+      except:
+        client_logger.error("Error occurred in thread <BROADCAST_PRESENCE>:\n" + traceback.format_exc())
   threading.Thread(target=broadcast_presence, daemon=True).start()
 
   def update_states():
@@ -152,9 +157,9 @@ def main():
         dest_ip = "default"
         sent_msg = router.send_message(UNICAST_SOCKET, user_input, new_msg_args, dest_ip, config.PORT)
         if sent_msg is not None:
-          client_state.add_recent_message(sent_msg)
-      except Exception as e:
-        client_logger.error("An error occurred:\n" + traceback.format_exc())
+          client_state.add_recent_message_sent(sent_msg)
+      except Exception:
+        client_logger.error("Error occurred in <MAIN>:\n" + traceback.format_exc())
     elif user_input is None:
       break
 

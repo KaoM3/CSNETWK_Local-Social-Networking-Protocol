@@ -83,7 +83,7 @@ class TicTacToeResult(BaseMessage):
         self.winning_line = winning_line
         self.turn = msg_format.sanitize_turn(turn)
         self.message_id = MessageID.generate()
-        self.token = Token(self.from_user, unix_now + ttl, Token.Scope.GAME)
+        self.token = Token(self.from_user, Timestamp(unix_now) + ttl, Token.Scope.GAME)
         self.timestamp = Timestamp(unix_now)
 
     @classmethod
